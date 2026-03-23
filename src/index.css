@@ -1,0 +1,82 @@
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  background: #080812;
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  background: #0a0a14;
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* ===== RESPONSIVE SIDEBAR ===== */
+@media (max-width: 768px) {
+  .sidebar-desktop { display: none !important; }
+}
+
+/* ===== RESPONSIVE MAIN LAYOUT ===== */
+@media (max-width: 768px) {
+  main {
+    padding: 20px 16px !important;
+  }
+}
+
+/* ===== STATS GRID ===== */
+@media (max-width: 1200px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 500px) {
+  .stats-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ===== OVERVIEW GRID ===== */
+@media (max-width: 1000px) {
+  .overview-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ===== TABLE RESPONSIVE ===== */
+@media (max-width: 700px) {
+  table { font-size: 12px !important; }
+  th, td { padding: 10px 10px !important; }
+}
