@@ -31,20 +31,38 @@ function exportCSV(bookings) {
 }
 
 export default function Bookings({ theme = 'dark' }) {
+  const [bookings, setBookings] = useState([]);
 
-  // ── ✅ Persisted state — loads from localStorage on mount ──────
-  const [bookings, setBookings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('innhance_bookings');
-      return saved ? JSON.parse(saved) : DEFAULT_BOOKINGS;
-    } catch { return DEFAULT_BOOKINGS; }
-  });
+ useEffect(() => {
+  fetch("http://localhost:8080/booking/all")
+    .then(res => res.json())
+    .then(data => {
 
-  // ── ✅ Save to localStorage whenever bookings change ───────────
-  useEffect(() => {
-    try { localStorage.setItem('innhance_bookings', JSON.stringify(bookings)); }
-    catch (e) { console.error('Storage error', e); }
-  }, [bookings]);
+      const mapped = data.bookings.map(b => ({
+  id: b._id,
+  name: b.guestName,
+  phone: b.phone,
+  room: b.roomType,
+  guests: b.numberOfGuests,
+  checkIn: new Date(b.checkIn).toLocaleDateString("en-IN"),
+  checkOut: new Date(b.checkOut).toLocaleDateString("en-IN"),
+  status: b.status,
+  amount: `₹${b.totalAmount}`, // ✅ FIXED
+  source: b.source || "whatsapp",
+  nights: Math.max(
+    1,
+    Math.round(
+      (new Date(b.checkOut) - new Date(b.checkIn)) / 86400000
+    )
+  ),
+}));
+
+      setBookings(mapped);
+    })
+    .catch(err => console.error(err));
+}, []);
+
+
 
   const [filter, setFilter]                   = useState('all');
   const [search, setSearch]                   = useState('');
