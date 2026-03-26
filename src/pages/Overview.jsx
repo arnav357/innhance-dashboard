@@ -1,20 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const stats = [
-  { label: 'Revenue', value: '₹3,24,500', icon: '💰', color: '#22c55e', change: '+8%', trend: 'up', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.15)', spark: [40,55,48,62,58,72,80], link: '/analytics' },
-  { label: 'Total Bookings', value: '124', icon: '📅', color: '#e8b86d', change: '+12%', trend: 'up', bg: 'rgba(232,184,109,0.08)', border: 'rgba(232,184,109,0.15)', spark: [30,38,35,50,45,60,62], link: '/bookings' },
-  { label: 'Active Customers', value: '89', icon: '👥', color: '#60a5fa', change: '+5', trend: 'up', bg: 'rgba(96,165,250,0.08)', border: 'rgba(96,165,250,0.15)', spark: [50,52,48,58,60,65,67], link: '/chats' },
-  { label: 'Pending', value: '7', icon: '⏳', color: '#f59e0b', change: '-2', trend: 'down', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)', spark: [10,12,9,11,8,9,7], link: '/bookings' },
-];
-
-const recentBookings = [
-  { id: 1, name: 'Priya Sharma', room: 'Deluxe', checkIn: '22 Mar', checkOut: '24 Mar', status: 'confirmed', amount: '₹8,000', phone: '+91 98765 43210' },
-  { id: 2, name: 'Rahul Verma', room: 'Suite', checkIn: '23 Mar', checkOut: '25 Mar', status: 'pending', amount: '₹15,000', phone: '+91 87654 32109' },
-  { id: 3, name: 'Anjali Singh', room: 'Standard', checkIn: '24 Mar', checkOut: '26 Mar', status: 'confirmed', amount: '₹5,000', phone: '+91 76543 21098' },
-  { id: 4, name: 'Vikram Patel', room: 'Deluxe', checkIn: '25 Mar', checkOut: '27 Mar', status: 'cancelled', amount: '₹8,000', phone: '+91 65432 10987' },
-];
-
 const activityFeed = [
   { icon: '✅', text: 'New booking confirmed — Priya Sharma', time: '2 min ago', color: '#22c55e' },
   { icon: '💰', text: 'Payment received — ₹15,000', time: '18 min ago', color: '#e8b86d' },
@@ -29,44 +15,57 @@ const quickActions = [
   { icon: '📊', label: 'Analytics', color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)', link: '/analytics' },
 ];
 
+const statusConfig = {
+  confirmed: { bg: 'rgba(34,197,94,0.1)', color: '#16a34a', border: 'rgba(34,197,94,0.25)', icon: '✓' },
+  pending:   { bg: 'rgba(245,158,11,0.1)', color: '#d97706', border: 'rgba(245,158,11,0.25)', icon: '⏳' },
+  cancelled: { bg: 'rgba(239,68,68,0.1)', color: '#dc2626', border: 'rgba(239,68,68,0.25)', icon: '✕' },
+};
+
 function Sparkline({ data, color }) {
-  const max = Math.max(...data), min = Math.min(...data);
+  const max = Math.max(...data);
+  const min = Math.min(...data);
   const range = max - min || 1;
+
   const w = 70, h = 32;
-  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4)}`).join(' ');
-  const last = data[data.length - 1];
-  const lx = w, ly = h - ((last - min) / range) * (h - 4);
+
+  // FIXED: Added backticks around the template literal here
+  const pts = data
+    .map((v, i) => 
+      `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4)}`
+    )
+    .join(' ');
+
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={`g${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={`0,${h} ${pts} ${w},${h}`} fill={`url(#g${color.replace('#','')})`} />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={lx} cy={ly} r="3" fill={color} />
+    <svg width={w} height={h}>
+      <polyline
+        points={pts}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+      />
     </svg>
   );
 }
 
-const statusConfig = {
-  confirmed: { bg: 'rgba(34,197,94,0.1)', color: '#16a34a', border: 'rgba(34,197,94,0.25)', icon: '✓' },
-  pending:   { bg: 'rgba(245,158,11,0.1)', color: '#d97706', border: 'rgba(245,158,11,0.25)', icon: '⏳' },
-  cancelled: { bg: 'rgba(239,68,68,0.1)',  color: '#dc2626', border: 'rgba(239,68,68,0.25)',  icon: '✕' },
-};
-
 export default function Overview({ theme = 'dark' }) {
+
   const navigate = useNavigate();
-  const hotel = JSON.parse(localStorage.getItem('hotel') || '{}');
+
+  // ✅ ALL STATES (TOP PE — IMPORTANT FOR HOOK ERROR FIX)
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+
   const [hoveredRow, setHoveredRow] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredAction, setHoveredAction] = useState(null);
+
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth <= 1100);
 
+  const hotel = JSON.parse(localStorage.getItem('hotel') || '{}');
+
+  // ✅ RESIZE EFFECT
   useEffect(() => {
     function onResize() {
       setIsMobile(window.innerWidth <= 768);
@@ -76,6 +75,107 @@ export default function Overview({ theme = 'dark' }) {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  // ✅ FETCH BOOKINGS
+  useEffect(() => {
+    fetch("http://localhost:8080/booking/all")
+      .then(res => res.json())
+      .then(data => {
+        setBookings(data.bookings || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Error fetching bookings:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  // ✅ LOADING (HOOK ERROR FIX — AFTER ALL HOOKS)
+  if (loading) {
+    return <div style={{ color: "white", padding: "20px" }}>Loading...</div>;
+  }
+
+  // ✅ STATS (DYNAMIC)
+  const totalBookings = bookings.length;
+
+  const totalRevenue = bookings.reduce((sum, b) => {
+    return sum + (b.totalAmount || 0);
+  }, 0);
+
+  const pending = bookings.filter(b => b.status === "pending").length;
+  const confirmed = bookings.filter(b => b.status === "confirmed").length;
+  const activeCustomers = new Set(bookings.map(b => b.phone)).size;
+
+  // ✅ FORMAT FOR UI (IMPORTANT)
+  const formattedBookings = bookings.map(b => ({
+    id: b._id,
+    name: b.guestName,
+    phone: b.phone,
+    room: b.roomType,
+    checkIn: new Date(b.checkIn).toLocaleDateString(),
+    checkOut: new Date(b.checkOut).toLocaleDateString(),
+    status: b.status,
+    amount: `₹${b.totalAmount}`
+  }));
+
+  // ✅ FILTER
+  const filtered =
+    statusFilter === 'all'
+      ? formattedBookings
+      : formattedBookings.filter(b => b.status === statusFilter);
+
+  const stats = [
+  {
+    label: 'Revenue',
+    value: `₹${totalRevenue}`,
+    icon: '💰',
+    color: '#22c55e',
+    change: '+8%',
+    trend: 'up',
+    bg: 'rgba(34,197,94,0.08)',
+    border: 'rgba(34,197,94,0.15)',
+    spark: [40, 55, 48, 62, 58, 72, 80],
+    link: '/bookings',
+  },
+  {
+    label: 'Total Bookings',
+    value: totalBookings,
+    icon: '📊',
+    color: '#e8b86d',
+    change: '+12%',
+    trend: 'up',
+    bg: 'rgba(232,184,109,0.08)',
+    border: 'rgba(232,184,109,0.15)',
+    spark: [30, 38, 35, 50, 45, 60, 62],
+    link: '/bookings',
+  },
+  {
+    label: 'Active Customers',
+    value: activeCustomers,
+    icon: '👤',
+    color: '#60a5fa',
+    change: '+5',
+    trend: 'up',
+    bg: 'rgba(96,165,250,0.08)',
+    border: 'rgba(96,165,250,0.15)',
+    spark: [50, 52, 48, 58, 60, 65, 67],
+    link: '/chats',
+  },
+  {
+    label: 'Pending',
+    value: pending,
+    icon: '⏳',
+    color: '#f59e0b',
+    change: '-2',
+    trend: 'down',
+    bg: 'rgba(245,158,11,0.08)',
+    border: 'rgba(245,158,11,0.15)',
+    spark: [10, 12, 9, 11, 8, 9, 7],
+    link: '/bookings',
+  },
+];
+
+
+  // ✅ COLORS / THEME (UNCHANGED)
   const isDark = theme === 'dark';
   const text        = isDark ? '#fff' : '#0f172a';
   const subtext     = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)';
@@ -88,8 +188,12 @@ export default function Overview({ theme = 'dark' }) {
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const filtered = statusFilter === 'all' ? recentBookings : recentBookings.filter(b => b.status === statusFilter);
+  const dateStr = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
 
   return (
     <div>
@@ -165,7 +269,7 @@ export default function Overview({ theme = 'dark' }) {
           </div>
         </div>
 
-        {/* Stats — 2 cols on mobile, 4 on desktop */}
+        {/* Stats */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : isTablet ? 'repeat(2,1fr)' : 'repeat(4,1fr)',
@@ -217,7 +321,7 @@ export default function Overview({ theme = 'dark' }) {
           ))}
         </div>
 
-        {/* Main grid — stacks on tablet/mobile */}
+        {/* Main grid */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: isTablet ? '1fr' : '1fr 320px',
@@ -232,7 +336,6 @@ export default function Overview({ theme = 'dark' }) {
             animation: 'fadeInUp 0.5s ease 0.3s both',
             boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)',
           }}>
-            {/* Table header */}
             <div style={{
               padding: isMobile ? '14px' : '16px 20px',
               borderBottom: `1px solid ${tableBorder}`,
@@ -263,7 +366,6 @@ export default function Overview({ theme = 'dark' }) {
               </div>
             </div>
 
-            {/* MOBILE: card layout | DESKTOP: table */}
             {isMobile ? (
               <div style={{ padding: '12px' }}>
                 {filtered.map(b => (
@@ -384,7 +486,7 @@ export default function Overview({ theme = 'dark' }) {
             )}
           </div>
 
-          {/* Live Activity — hidden on mobile to save space, shown on tablet+ */}
+          {/* Live Activity */}
           {!isMobile && (
             <div style={{
               background: cardBg, border: `1px solid ${cardBorder}`,
@@ -436,7 +538,7 @@ export default function Overview({ theme = 'dark' }) {
           )}
         </div>
 
-        {/* On mobile: Live activity as horizontal scroll strip */}
+        {/* On mobile: Live activity */}
         {isMobile && (
           <div style={{
             background: cardBg, border: `1px solid ${cardBorder}`,
