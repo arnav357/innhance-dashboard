@@ -6,8 +6,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// ── Data ─────────────────────────────────────────────────────────
-const ALL_REVENUE = [
+// ── Default Fallback Data ────────────────────────────────────────
+const DEFAULT_REVENUE = [
   { month: 'Oct', revenue: 85000,  bookings: 28,  occupancy: 62 },
   { month: 'Nov', revenue: 102000, bookings: 35,  occupancy: 70 },
   { month: 'Dec', revenue: 138000, bookings: 52,  occupancy: 85 },
@@ -16,13 +16,13 @@ const ALL_REVENUE = [
   { month: 'Mar', revenue: 324500, bookings: 124, occupancy: 95 },
 ];
 
-const roomData = [
+const DEFAULT_ROOM_DATA = [
   { name: 'Standard', value: 35, color: '#60a5fa', bookings: 43,  revenue: 107500 },
   { name: 'Deluxe',   value: 45, color: '#e8b86d', bookings: 56,  revenue: 224000 },
   { name: 'Suite',    value: 20, color: '#22c55e', bookings: 25,  revenue: 187500 },
 ];
 
-const weeklyData = [
+const DEFAULT_WEEKLY_DATA = [
   { day: 'Mon', checkins: 8,  checkouts: 5,  revenue: 32000,  isToday: false },
   { day: 'Tue', checkins: 12, checkouts: 9,  revenue: 48000,  isToday: false },
   { day: 'Wed', checkins: 6,  checkouts: 11, revenue: 24000,  isToday: false },
@@ -32,7 +32,7 @@ const weeklyData = [
   { day: 'Sun', checkins: 19, checkouts: 22, revenue: 76000,  isToday: false },
 ];
 
-const topGuests = [
+const DEFAULT_TOP_GUESTS = [
   { name: 'Priya Sharma', visits: 4, spent: '₹32,000', spentNum: 32000, room: 'Deluxe'   },
   { name: 'Rahul Verma',  visits: 3, spent: '₹45,000', spentNum: 45000, room: 'Suite'    },
   { name: 'Anjali Singh', visits: 5, spent: '₹25,000', spentNum: 25000, room: 'Standard' },
@@ -79,8 +79,8 @@ function TodayBar(props) {
   );
 }
 
-// ── Export helper ────────────────────────────────────────────────
-function exportReport(revenueData) {
+// ── Export helper (Updated to take dynamic data) ─────────────────
+function exportReport(revenueData, roomData, topGuests) {
   const lines = [
     'Innhance Hotels — Analytics Report',
     `Generated: ${new Date().toLocaleDateString('en-IN')}`,
@@ -103,9 +103,53 @@ function exportReport(revenueData) {
 
 // ── Main component ───────────────────────────────────────────────
 export default function Analytics({ theme = 'dark' }) {
+  // ── ✅ Backend States ──────────────────────────────────────────
+  const [allRevenue, setAllRevenue] = useState(DEFAULT_REVENUE);
+  const [roomStats, setRoomStats]   = useState(DEFAULT_ROOM_DATA);
+  const [weekStats, setWeekStats]   = useState(DEFAULT_WEEKLY_DATA);
+  const [guestsList, setGuestsList] = useState(DEFAULT_TOP_GUESTS);
+  
+  const [isLoading, setIsLoading]   = useState(true);
+  const [error, setError]           = useState(null);
+
   const [period, setPeriod]   = useState('6M');
   const [isMobile, setMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setTablet] = useState(window.innerWidth <= 1100);
+
+  // ── ✅ Fetch Data from Backend (Port 8080) ─────────────────────
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('http://localhost:8080/api/analytics');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics data');
+        }
+
+        const data = await response.json();
+        
+        // Ensure data exists before setting, otherwise fallback to defaults
+        setAllRevenue(data.revenueData || DEFAULT_REVENUE);
+        setRoomStats(data.roomData || DEFAULT_ROOM_DATA);
+        setWeekStats(data.weeklyData || DEFAULT_WEEKLY_DATA);
+        setGuestsList(data.topGuests || DEFAULT_TOP_GUESTS);
+        
+      } catch (err) {
+        console.error('Error fetching analytics from backend, using fallback data:', err);
+        setError(err.message);
+        // Fallback is already handled by default state, but we ensure it here
+        setAllRevenue(DEFAULT_REVENUE);
+        setRoomStats(DEFAULT_ROOM_DATA);
+        setWeekStats(DEFAULT_WEEKLY_DATA);
+        setGuestsList(DEFAULT_TOP_GUESTS);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAnalyticsData();
+  }, []);
 
   useEffect(() => {
     function onResize() { setMobile(window.innerWidth <= 768); setTablet(window.innerWidth <= 1100); }
@@ -122,14 +166,14 @@ export default function Analytics({ theme = 'dark' }) {
   const axisColor   = isDark ? 'rgba(255,255,255,0.3)'  : 'rgba(0,0,0,0.4)';
 
   // Slice data based on selected period
-  const months       = PERIOD_MONTHS[period] || 6;
-  const revenueData  = ALL_REVENUE.slice(-months);
+  const months      = PERIOD_MONTHS[period] || 6;
+  const revenueData = allRevenue.slice(-months);
 
   // Derived KPI values from current period
   const totalRevenue = revenueData.reduce((s, r) => s + r.revenue, 0);
   const totalBookings= revenueData.reduce((s, r) => s + r.bookings, 0);
-  const avgOccupancy = Math.round(revenueData.reduce((s, r) => s + r.occupancy, 0) / revenueData.length);
-  const totalGuest   = topGuests.reduce((s, g) => s + g.spentNum, 0);
+  const avgOccupancy = Math.round(revenueData.reduce((s, r) => s + r.occupancy, 0) / revenueData.length) || 0;
+  const totalGuest   = guestsList.reduce((s, g) => s + g.spentNum, 0);
 
   const kpis = [
     { label: 'Total Revenue',   value: `₹${totalRevenue.toLocaleString()}`, change: '+28%', trend: 'up', color: '#22c55e', icon: '💰', sub: `Last ${period}` },
@@ -149,6 +193,14 @@ export default function Analytics({ theme = 'dark' }) {
   const pieOuter   = isMobile ? 80 : 90;
   const pieInner   = isMobile ? 50 : 58;
   const pieH       = isMobile ? 160 : 190;
+
+  if (isLoading) {
+    return (
+      <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: subtext, fontFamily: "'DM Sans', sans-serif" }}>
+        Loading Analytics Data...
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -188,7 +240,7 @@ export default function Analytics({ theme = 'dark' }) {
             </div>
 
             {/* Export button */}
-            <button className="export-btn" onClick={() => exportReport(revenueData)} style={{
+            <button className="export-btn" onClick={() => exportReport(revenueData, roomStats, guestsList)} style={{
               padding: isMobile ? '7px 10px' : '8px 14px', borderRadius: '10px',
               background: 'transparent', border: `1px solid ${cardBorder}`,
               color: subtext, fontSize: '12px', fontWeight: '600',
@@ -277,8 +329,8 @@ export default function Analytics({ theme = 'dark' }) {
             {/* Bigger donut */}
             <ResponsiveContainer width="100%" height={pieH}>
               <PieChart>
-                <Pie data={roomData} cx="50%" cy="50%" innerRadius={pieInner} outerRadius={pieOuter} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                  {roomData.map((entry, i) => <Cell key={i} fill={entry.color} opacity={0.9} />)}
+                <Pie data={roomStats} cx="50%" cy="50%" innerRadius={pieInner} outerRadius={pieOuter} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                  {roomStats.map((entry, i) => <Cell key={i} fill={entry.color} opacity={0.9} />)}
                 </Pie>
                 <Tooltip formatter={(v, n) => [`${v}%`, n]} contentStyle={{ background: isDark ? 'rgba(10,10,20,0.97)' : '#fff', border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, borderRadius: '10px', fontSize: '12px' }} />
               </PieChart>
@@ -286,7 +338,7 @@ export default function Analytics({ theme = 'dark' }) {
 
             {/* Legend rows */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {roomData.map((r, i) => (
+              {roomStats.map((r, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '10px', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: r.color, flexShrink: 0, boxShadow: `0 0 6px ${r.color}60` }} />
@@ -327,18 +379,18 @@ export default function Analytics({ theme = 'dark' }) {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={chartH2}>
-              <BarChart data={weeklyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barGap={3}>
+              <BarChart data={weekStats} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barGap={3}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
                 <XAxis dataKey="day" tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false}
-                  tickFormatter={(val, idx) => weeklyData[idx]?.isToday ? `${val} ●` : val}
+                  tickFormatter={(val, idx) => weekStats[idx]?.isToday ? `${val} ●` : val}
                 />
                 <YAxis tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false} width={25} />
                 <Tooltip content={<CustomTooltip isDark={isDark} />} />
                 <Bar dataKey="checkins" name="Check-ins"
-                  shape={(props) => <TodayBar {...props} isToday={weeklyData[props.index]?.isToday} fill="#e8b86d" />}
+                  shape={(props) => <TodayBar {...props} isToday={weekStats[props.index]?.isToday} fill="#e8b86d" />}
                 />
                 <Bar dataKey="checkouts" name="Check-outs"
-                  shape={(props) => <TodayBar {...props} isToday={weeklyData[props.index]?.isToday} fill="#60a5fa" />}
+                  shape={(props) => <TodayBar {...props} isToday={weekStats[props.index]?.isToday} fill="#60a5fa" />}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -355,7 +407,7 @@ export default function Analytics({ theme = 'dark' }) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {topGuests.map((g, i) => {
+              {guestsList.map((g, i) => {
                 const [g1, g2] = avatarGradients[i % avatarGradients.length];
                 const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
                 return (
@@ -386,7 +438,7 @@ export default function Analytics({ theme = 'dark' }) {
                       <div style={{ fontSize: '13px', fontWeight: '800', color: isDark ? '#e8b86d' : '#b45309' }}>{g.spent}</div>
                       {/* Mini spend bar */}
                       <div style={{ width: '50px', height: '3px', background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)', borderRadius: '100px', marginTop: '4px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${Math.round((g.spentNum / Math.max(...topGuests.map(x => x.spentNum))) * 100)}%`, background: '#e8b86d', borderRadius: '100px' }} />
+                        <div style={{ height: '100%', width: `${Math.round((g.spentNum / Math.max(...guestsList.map(x => x.spentNum))) * 100)}%`, background: '#e8b86d', borderRadius: '100px' }} />
                       </div>
                     </div>
                   </div>
