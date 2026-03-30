@@ -7,49 +7,6 @@ const ALL_AMENITIES = [
   'King Bed', 'Bathtub', 'Work Desk',
 ];
 
-// Default rooms now include roomNumbers array
-const DEFAULT_ROOMS = [
-  {
-    id: 1, type: 'Standard Room', emoji: '🛏️',
-    price: 2500, total: 10, available: 7,
-    amenities: ['Free WiFi', 'Breakfast', 'AC', 'TV'],
-    description: 'Comfortable room perfect for solo travelers or couples',
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600',
-    // roomNumbers: each entry { num: '101', booked: false }
-    roomNumbers: [
-      { num: '101', booked: false }, { num: '102', booked: false },
-      { num: '103', booked: true  }, { num: '104', booked: false },
-      { num: '105', booked: false }, { num: '106', booked: true  },
-      { num: '107', booked: true  }, { num: '108', booked: false },
-      { num: '109', booked: false }, { num: '110', booked: false },
-    ],
-  },
-  {
-    id: 2, type: 'Deluxe Room', emoji: '🌟',
-    price: 4000, total: 8, available: 5,
-    amenities: ['Free WiFi', 'Breakfast', 'AC', 'TV', 'Mini Bar', 'City View'],
-    description: 'Spacious room with beautiful city views and premium amenities',
-    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600',
-    roomNumbers: [
-      { num: '201', booked: false }, { num: '202', booked: true  },
-      { num: '203', booked: false }, { num: '204', booked: true  },
-      { num: '205', booked: false }, { num: '206', booked: true  },
-      { num: '207', booked: false }, { num: '208', booked: false },
-    ],
-  },
-  {
-    id: 3, type: 'Suite', emoji: '👑',
-    price: 7500, total: 4, available: 2,
-    amenities: ['Free WiFi', 'Breakfast', 'AC', 'TV', 'Mini Bar', 'Living Room', 'Jacuzzi'],
-    description: 'Ultimate luxury experience with premium facilities',
-    image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=600',
-    roomNumbers: [
-      { num: 'P1', booked: true  }, { num: 'P2', booked: false },
-      { num: 'P3', booked: true  }, { num: 'P4', booked: false },
-    ],
-  },
-];
-
 // ── helpers ─────────────────────────────────────────────────────
 function deriveAvailable(roomNumbers) {
   return roomNumbers.filter(r => !r.booked).length;
@@ -79,10 +36,9 @@ function ConfirmDialog({ message, onConfirm, onCancel, isDark }) {
   );
 }
 
-// ── Real Room Grid (Option C) ────────────────────────────────────
-// Shows actual room numbers entered by staff. Click to toggle booked/available.
+// ── Real Room Grid ────────────────────────────────────
 function RoomGrid({ room, onToggle, isDark, subtext }) {
-  const [tooltip, setTooltip] = useState(null); // { num, booked }
+  const [tooltip, setTooltip] = useState(null);
 
   if (!room.roomNumbers || room.roomNumbers.length === 0) {
     return (
@@ -138,23 +94,19 @@ function RoomGrid({ room, onToggle, isDark, subtext }) {
   );
 }
 
-// ── Room Number Input (inside form) ─────────────────────────────
-// Staff types comma-separated room numbers e.g. "101, 102, A3, P1"
-// Existing booked status is preserved when editing
+// ── Room Number Input ─────────────────────────────
 function RoomNumberInput({ roomNumbers, onChange, isDark }) {
   const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)';
   const inputBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
   const subtext = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)';
   const text = isDark ? '#fff' : '#0f172a';
 
-  // Convert roomNumbers array → comma string for display
   const [inputVal, setInputVal] = useState(
     roomNumbers.map(r => r.num).join(', ')
   );
 
   function handleChange(val) {
     setInputVal(val);
-    // Parse into roomNumbers array, preserving booked status for existing rooms
     const nums = val.split(',').map(s => s.trim()).filter(Boolean);
     const existingMap = Object.fromEntries(roomNumbers.map(r => [r.num, r.booked]));
     const newRooms = nums.map(n => ({ num: n, booked: existingMap[n] ?? false }));
@@ -180,9 +132,7 @@ function RoomNumberInput({ roomNumbers, onChange, isDark }) {
       />
       <div style={{ fontSize: '11px', color: subtext, marginTop: '5px', lineHeight: '1.5' }}>
         Enter your hotel's actual room numbers separated by commas.
-        These will appear in the room grid. You can use any format: <span style={{ color: isDark ? '#e8b86d' : '#b45309', fontWeight: '600' }}>101, 102, A1, P1, GF-1</span>
       </div>
-      {/* Live preview */}
       {roomNumbers.length > 0 && (
         <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '10px', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', border: `1px solid ${border}` }}>
           <div style={{ fontSize: '10px', color: subtext, fontWeight: '600', marginBottom: '7px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
@@ -295,7 +245,7 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
   const [form, setForm] = useState({
     type: '', price: '', description: '',
     amenities: [], image: '', emoji: '🛏️',
-    roomNumbers: [], // ← real room numbers
+    roomNumbers: [], 
     ...initial,
   });
 
@@ -330,13 +280,11 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
         <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', color: subtext, cursor: 'pointer', fontSize: '22px', lineHeight: 1 }}>×</button>
       </div>
 
-      {/* Image */}
       <div style={{ marginBottom: '16px' }}>
         <label style={labelStyle}>Room Image</label>
         <ImageUploader image={form.image} onChange={v => setForm(p => ({ ...p, image: v }))} />
       </div>
 
-      {/* Name + Price */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
         <div>
           <label style={labelStyle}>Room Type Name *</label>
@@ -350,14 +298,12 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
         </div>
       </div>
 
-      {/* Description */}
       <div style={{ marginBottom: '16px' }}>
         <label style={labelStyle}>Description</label>
         <input type="text" value={form.description} placeholder="Brief description of this room type"
           onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={inputStyle} />
       </div>
 
-      {/* ── Room Numbers (Option C) ── */}
       <div style={{ marginBottom: '16px' }}>
         <RoomNumberInput
           roomNumbers={form.roomNumbers}
@@ -366,7 +312,6 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
         />
       </div>
 
-      {/* Amenities */}
       <div style={{ marginBottom: '20px' }}>
         <label style={{ ...labelStyle, marginBottom: '10px' }}>Amenities</label>
         <AmenitySelector selected={form.amenities} onChange={v => setForm(p => ({ ...p, amenities: v }))} isDark={isDark} />
@@ -382,12 +327,8 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
 
 // ── Main Rooms component ─────────────────────────────────────────
 export default function Rooms({ theme = 'dark' }) {
-  const [rooms, setRooms] = useState(() => {
-    try {
-      const s = localStorage.getItem('innhance_rooms');
-      return s ? JSON.parse(s) : DEFAULT_ROOMS;
-    } catch { return DEFAULT_ROOMS; }
-  });
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [showAdd, setShowAdd]           = useState(false);
   const [editingId, setEditingId]       = useState(null);
@@ -401,11 +342,31 @@ export default function Rooms({ theme = 'dark' }) {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Persist to localStorage
   useEffect(() => {
-    try { localStorage.setItem('innhance_rooms', JSON.stringify(rooms)); }
-    catch {}
-  }, [rooms]);
+    fetch("http://localhost:8080/rooms/all")
+      .then(res => res.json())
+      .then(data => {
+        const mappedRooms = (data.rooms || []).map(r => ({
+          id: r._id,
+          type: r.name,
+          price: r.price,
+          total: r.totalRooms,
+          available: r.availableRooms,
+          description: r.description || "",
+          amenities: r.amenities || [],
+          image: r.image || "",
+          emoji: "🛏️",
+          roomNumbers: r.roomNumbers || []
+        }));
+
+        setRooms(mappedRooms);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Error fetching rooms:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const isDark     = theme === 'dark';
   const text       = isDark ? '#fff' : '#0f172a';
@@ -414,50 +375,130 @@ export default function Rooms({ theme = 'dark' }) {
   const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
   const tagBg      = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
 
-  function saveRoom(form) {
+  // ===== DATABASE SAVE FUNCTION =====
+  async function saveRoom(form) {
     const roomNumbers = form.roomNumbers || [];
-    const total       = roomNumbers.length;
-    const available   = deriveAvailable(roomNumbers);
+    const total = roomNumbers.length;
+    const available = deriveAvailable(roomNumbers);
 
-    const updated = {
-      type:        form.type || 'Unnamed Room',
-      price:       Number(form.price) || 0,
-      total,
-      available,
+    const updatedData = {
+      name: form.type || 'Unnamed Room', 
+      price: Number(form.price) || 0,
+      totalRooms: total,
+      availableRooms: available,
       description: form.description || '',
-      amenities:   form.amenities || [],
-      image:       form.image || '',
-      emoji:       form.emoji || '🛏️',
-      roomNumbers,
+      amenities: form.amenities || [],
+      image: form.image || '',
+      roomNumbers: roomNumbers,
     };
 
-    if (editingId) {
-      setRooms(prev => prev.map(r => r.id === editingId ? { ...updated, id: r.id } : r));
-      setEditingId(null);
-    } else {
-      setRooms(prev => [...prev, { ...updated, id: Date.now() }]);
-      setShowAdd(false);
+    try {
+      let response;
+      if (editingId) {
+        response = await fetch(`http://localhost:8080/rooms/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+      } else {
+        response = await fetch('http://localhost:8080/rooms/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+      }
+
+      if (response.ok) {
+        const res = await fetch("http://localhost:8080/rooms/all");
+        const data = await res.json();
+        
+        const mappedRooms = (data.rooms || []).map(r => ({
+          id: r._id,
+          type: r.name,
+          price: r.price,
+          total: r.totalRooms,
+          available: r.availableRooms,
+          description: r.description || "",
+          amenities: r.amenities || [],
+          image: r.image || "",
+          emoji: "🛏️",
+          roomNumbers: r.roomNumbers || []
+        }));
+
+        setRooms(mappedRooms);
+        setEditingId(null);
+        setShowAdd(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        console.error("Failed to save room to database");
+      }
+    } catch (err) {
+      console.error("Error connecting to server:", err);
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Toggle individual room booked status from the grid
-  function toggleRoomBooked(roomId, roomIndex) {
-    setRooms(prev => prev.map(r => {
-      if (r.id !== roomId) return r;
-      const newNums = r.roomNumbers.map((rn, i) =>
-        i === roomIndex ? { ...rn, booked: !rn.booked } : rn
-      );
-      return { ...r, roomNumbers: newNums, available: deriveAvailable(newNums) };
-    }));
+  // ===== TOGGLE BOOKING STATUS (Updates Database) =====
+  async function toggleRoomBooked(roomId, roomIndex) {
+    // 1. Find the target room in local state
+    const roomToUpdate = rooms.find(r => r.id === roomId);
+    if (!roomToUpdate) return;
+
+    // 2. Generate the new updated array of room numbers
+    const newNums = roomToUpdate.roomNumbers.map((rn, i) =>
+      i === roomIndex ? { ...rn, booked: !rn.booked } : rn
+    );
+    const newAvailable = deriveAvailable(newNums);
+
+    // 3. Update the local UI immediately (Optimistic UI)
+    setRooms(prev => prev.map(r => 
+      r.id === roomId ? { ...r, roomNumbers: newNums, available: newAvailable } : r
+    ));
+
+    // 4. Create the payload matching your backend Schema
+    const payload = {
+      name: roomToUpdate.type,
+      price: roomToUpdate.price,
+      totalRooms: roomToUpdate.total,
+      availableRooms: newAvailable,
+      description: roomToUpdate.description,
+      amenities: roomToUpdate.amenities,
+      image: roomToUpdate.image,
+      roomNumbers: newNums
+    };
+
+    // 5. Send the update to the Database
+    try {
+      const response = await fetch(`http://localhost:8080/rooms/${roomId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        console.error("Failed to sync room booking status to database");
+      }
+    } catch (err) {
+      console.error("Error communicating with server:", err);
+    }
+  }
+
+  // ===== DATABASE DELETE FUNCTION =====
+  async function doDelete() {
+    try {
+      const response = await fetch(`http://localhost:8080/rooms/${deleteTarget}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setRooms(prev => prev.filter(r => r.id !== deleteTarget));
+        if (editingId === deleteTarget) setEditingId(null);
+        setDeleteTarget(null);
+      }
+    } catch (err) {
+      console.error("Error deleting room:", err);
+    }
   }
 
   function confirmDelete(id) { setDeleteTarget(id); }
-  function doDelete() {
-    setRooms(prev => prev.filter(r => r.id !== deleteTarget));
-    if (editingId === deleteTarget) setEditingId(null);
-    setDeleteTarget(null);
-  }
 
   function handleEditClick(room) {
     setEditingId(room.id); setShowAdd(false);
@@ -469,6 +510,10 @@ export default function Rooms({ theme = 'dark' }) {
   const totalAvail  = rooms.reduce((s, r) => s + (r.available || 0), 0);
   const overallOcc  = totalRooms > 0 ? Math.round(((totalRooms - totalAvail) / totalRooms) * 100) : 0;
   const cols        = isMobile ? '1fr' : isTablet ? 'repeat(2,1fr)' : 'repeat(3,1fr)';
+
+  if (loading) {
+    return <div style={{ color: "white", padding: "20px" }}>Loading...</div>;
+  }
 
   return (
     <div>
@@ -487,7 +532,6 @@ export default function Rooms({ theme = 'dark' }) {
 
       <div className="rooms-root">
 
-        {/* Confirm delete */}
         {deleteTarget && (
           <ConfirmDialog
             message={`This will permanently remove "${rooms.find(r => r.id === deleteTarget)?.type}" and all its room data.`}
@@ -495,7 +539,6 @@ export default function Rooms({ theme = 'dark' }) {
           />
         )}
 
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '20px', animation: 'fadeInUp 0.5s ease forwards', gap: '12px', flexWrap: 'wrap' }}>
           <div>
             <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '800', color: text, letterSpacing: '-0.5px', marginBottom: '4px' }}>Room Management</h1>
@@ -515,7 +558,6 @@ export default function Rooms({ theme = 'dark' }) {
           }}>➕ {!isMobile && 'Add Room Type'}</button>
         </div>
 
-        {/* Summary stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '20px', animation: 'fadeInUp 0.5s ease 0.05s both' }}>
           {[
             { label: 'Total Rooms', value: totalRooms,       color: '#e8b86d', bg: 'rgba(232,184,109,0.08)', border: 'rgba(232,184,109,0.15)' },
@@ -534,14 +576,12 @@ export default function Rooms({ theme = 'dark' }) {
           ))}
         </div>
 
-        {/* Add form */}
         {showAdd && !editingId && (
           <RoomForm key="add-form" title="➕ Add New Room Type"
             initial={{ type: '', price: '', description: '', amenities: [], image: '', emoji: '🛏️', roomNumbers: [] }}
             onSave={saveRoom} onCancel={() => setShowAdd(false)} isDark={isDark} isMobile={isMobile} />
         )}
 
-        {/* Edit form */}
         {editingId && editingRoom && (
           <RoomForm key={`edit-${editingId}`} title={`✏️ Editing — ${editingRoom.type}`}
             initial={{
@@ -553,7 +593,6 @@ export default function Rooms({ theme = 'dark' }) {
             onSave={saveRoom} onCancel={() => setEditingId(null)} isDark={isDark} isMobile={isMobile} />
         )}
 
-        {/* Rooms grid */}
         <div style={{ display: 'grid', gridTemplateColumns: cols, gap: '16px', animation: 'fadeInUp 0.5s ease 0.1s both' }}>
           {rooms.map(room => {
             const availPercent = room.total > 0 ? (room.available / room.total) * 100 : 0;
@@ -570,7 +609,6 @@ export default function Rooms({ theme = 'dark' }) {
                 boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 2px 16px rgba(0,0,0,0.07)',
               }}>
 
-                {/* Image */}
                 <div style={{ height: isMobile ? '130px' : '150px', position: 'relative', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', overflow: 'hidden' }}>
                   {room.image ? (
                     <img src={room.image} alt={room.type} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
@@ -586,11 +624,9 @@ export default function Rooms({ theme = 'dark' }) {
                       <div style={{ fontSize: '14px', fontWeight: '800', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>{room.type}</div>
                     </div>
                   )}
-                  {/* Status badge */}
                   <div style={{ position: 'absolute', top: '10px', right: '10px', padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', background: isFull ? 'rgba(239,68,68,0.9)' : isLow ? 'rgba(245,158,11,0.9)' : 'rgba(34,197,94,0.9)', color: '#fff', backdropFilter: 'blur(4px)' }}>
                     {isFull ? '🔴 Full' : isLow ? `⚠️ ${room.available} left` : `✅ ${room.available} left`}
                   </div>
-                  {/* Edit button */}
                   <button onClick={() => handleEditClick(room)} style={{ position: 'absolute', top: '10px', left: '10px', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', background: editingId === room.id ? 'rgba(232,184,109,0.9)' : 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)', color: editingId === room.id ? '#1a0f00' : '#fff', cursor: 'pointer', fontWeight: '700', fontFamily: 'inherit', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s' }}>
                     {editingId === room.id ? '✏️ Editing…' : '✏️ Edit'}
                   </button>
@@ -600,7 +636,6 @@ export default function Rooms({ theme = 'dark' }) {
                   {!room.image && <h3 style={{ fontSize: '15px', fontWeight: '700', color: text, marginBottom: '6px' }}>{room.type}</h3>}
                   {room.description && <p style={{ fontSize: '12px', color: subtext, marginBottom: '10px', lineHeight: '1.5' }}>{room.description}</p>}
 
-                  {/* Price + Occupancy strip */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', borderRadius: '12px', marginBottom: '12px', background: isDark ? 'rgba(232,184,109,0.06)' : 'rgba(232,184,109,0.08)', border: '1px solid rgba(232,184,109,0.15)' }}>
                     <div>
                       <div style={{ fontSize: '9px', color: subtext, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Price / night</div>
@@ -616,7 +651,6 @@ export default function Rooms({ theme = 'dark' }) {
                     </div>
                   </div>
 
-                  {/* Availability bar */}
                   <div style={{ marginBottom: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ fontSize: '11px', color: subtext, fontWeight: '600' }}>Availability</span>
@@ -627,7 +661,6 @@ export default function Rooms({ theme = 'dark' }) {
                     </div>
                   </div>
 
-                  {/* ── Real Room Grid (Option C) ── */}
                   <RoomGrid
                     room={room}
                     onToggle={toggleRoomBooked}
@@ -635,7 +668,6 @@ export default function Rooms({ theme = 'dark' }) {
                     subtext={subtext}
                   />
 
-                  {/* Amenities */}
                   {room.amenities?.length > 0 && (
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '10px', color: subtext, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '7px' }}>Amenities</div>
@@ -647,7 +679,6 @@ export default function Rooms({ theme = 'dark' }) {
                     </div>
                   )}
 
-                  {/* Delete */}
                   <button onClick={() => confirmDelete(room.id)}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(239,68,68,0.5)'; e.currentTarget.style.borderColor = isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.2)'; }}
@@ -659,7 +690,6 @@ export default function Rooms({ theme = 'dark' }) {
             );
           })}
 
-          {/* Add placeholder card */}
           <div
             onClick={() => { setShowAdd(true); setEditingId(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232,184,109,0.5)'; e.currentTarget.style.background = 'rgba(232,184,109,0.04)'; }}

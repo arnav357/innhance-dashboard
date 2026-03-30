@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,26 +11,47 @@ export default function Login() {
   const [btnHovered, setBtnHovered] = useState(false);
   const navigate = useNavigate();
 
-  async function handleLogin(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setTimeout(() => {
-      if (email === 'admin@innhance.com' && password === 'demo123') {
-        localStorage.setItem('token', 'dummy-token-123');
-        localStorage.setItem('hotel', JSON.stringify({
-          name: 'Innhance Hotels',
-          email: 'admin@innhance.com',
-          plan: 'pro',
-          subscriptionExpiry: '2026-06-20'
-        }));
-        navigate('/');
-      } else {
-        setError('Invalid email or password. Please try again.');
-      }
-      setLoading(false);
-    }, 1000);
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    navigate("/");
   }
+}, [navigate]);
+    
+  async function handleLogin(e) {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+
+  try {
+    const res = await fetch("http://localhost:8080/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Login failed");
+    }
+
+    // ✅ save token
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("hotel", JSON.stringify(data.hotel));
+
+    // ✅ redirect
+    navigate("/");
+
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+  
 
   const features = [
     { icon: '🤖', label: 'AI Automation' },
