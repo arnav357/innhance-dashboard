@@ -41,6 +41,7 @@ export default function Login() {
     // ✅ save token
     localStorage.setItem("token", data.token);
     localStorage.setItem("hotel", JSON.stringify(data.hotel));
+    localStorage.setItem("hotel", JSON.stringify(data.user));
 
     // ✅ redirect
     navigate("/");

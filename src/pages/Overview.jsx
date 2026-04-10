@@ -63,7 +63,8 @@ export default function Overview({ theme = 'dark' }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth <= 1100);
 
-  const hotel = JSON.parse(localStorage.getItem('hotel') || '{}');
+  const hotelData = localStorage.getItem('hotel');
+  const hotel = hotelData ? JSON.parse(hotelData) : {};
 
   // ✅ RESIZE EFFECT
   useEffect(() => {

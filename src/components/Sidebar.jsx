@@ -30,7 +30,8 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [hoveredLink, setHoveredLink] = useState(null);
-  const hotel = JSON.parse(localStorage.getItem('hotel') || '{}');
+  const hotelData = localStorage.getItem('hotel');
+  const hotel = hotelData ? JSON.parse(hotelData) : {};
   const isDark = theme === 'dark';
 
   useEffect(() => {
