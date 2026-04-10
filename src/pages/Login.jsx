@@ -24,7 +24,7 @@ export default function Login() {
   setError("");
 
   try {
-    const res = await fetch("http://localhost:8080/auth/login", {
+    const res = await fetch("https://innhance-bot-production.up.railway.app/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
