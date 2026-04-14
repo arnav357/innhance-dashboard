@@ -25,12 +25,13 @@ const navGroups = [
   },
 ];
 
+
 export default function Sidebar({ theme, toggleTheme, onClose }) {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [hoveredLink, setHoveredLink] = useState(null);
-  const hotelData = localStorage.getItem('hotel');
+  const hotelData = localStorage.getItem('user');
   const hotel = hotelData ? JSON.parse(hotelData) : {};
   const isDark = theme === 'dark';
 

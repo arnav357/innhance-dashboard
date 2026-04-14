@@ -335,6 +335,7 @@ export default function Rooms({ theme = 'dark' }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isMobile, setIsMobile]         = useState(window.innerWidth <= 768);
   const [isTablet, setIsTablet]         = useState(window.innerWidth <= 1100);
+  const backendUrl=import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
   useEffect(() => {
     function onResize() { setIsMobile(window.innerWidth <= 768); setIsTablet(window.innerWidth <= 1100); }
@@ -343,30 +344,39 @@ export default function Rooms({ theme = 'dark' }) {
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:8080/rooms/all")
-      .then(res => res.json())
-      .then(data => {
-        const mappedRooms = (data.rooms || []).map(r => ({
-          id: r._id,
-          type: r.name,
-          price: r.price,
-          total: r.totalRooms,
-          available: r.availableRooms,
-          description: r.description || "",
-          amenities: r.amenities || [],
-          image: r.image || "",
-          emoji: "🛏️",
-          roomNumbers: r.roomNumbers || []
-        }));
+  fetch(`${backendUrl}/rooms/all`, {   // ✅ options go INSIDE fetch
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`
+    }
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to fetch rooms");
+      return res.json();
+    })
+    .then(data => {
+      console.log("🔥 Backend data:", data);
 
-        setRooms(mappedRooms);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Error fetching rooms:", err);
-        setLoading(false);
-      });
-  }, []);
+      const mappedRooms = (data.rooms || []).map(r => ({
+        id: r._id,
+        type: r.name,
+        price: r.price,
+        total: r.totalRooms ?? 0,
+        available: r.availableRooms ?? 0,
+        description: r.description || "",
+        amenities: r.amenities || [],
+        image: r.image || "",
+        emoji: "🛏️",
+        roomNumbers: r.roomNumbers || []
+      }));
+
+      setRooms(mappedRooms);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error("Error fetching rooms:", err);
+      setLoading(false);
+    });
+}, []);
 
   const isDark     = theme === 'dark';
   const text       = isDark ? '#fff' : '#0f172a';
@@ -395,21 +405,29 @@ export default function Rooms({ theme = 'dark' }) {
     try {
       let response;
       if (editingId) {
-        response = await fetch(`http://localhost:8080/rooms/${editingId}`, {
+        response = await fetch(`${backendUrl}/rooms/${editingId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+           },
           body: JSON.stringify(updatedData)
         });
       } else {
-        response = await fetch('http://localhost:8080/rooms/add', {
+        response = await fetch(`${backendUrl}/rooms/add`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+           },
           body: JSON.stringify(updatedData)
         });
       }
 
       if (response.ok) {
-        const res = await fetch("http://localhost:8080/rooms/all");
+        const res = await fetch(`${backendUrl}/rooms/all`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        });
         const data = await res.json();
         
         const mappedRooms = (data.rooms || []).map(r => ({
@@ -468,9 +486,11 @@ export default function Rooms({ theme = 'dark' }) {
 
     // 5. Send the update to the Database
     try {
-      const response = await fetch(`http://localhost:8080/rooms/${roomId}`, {
+      const response = await fetch(`${backendUrl}/rooms/${roomId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+         },
         body: JSON.stringify(payload)
       });
       if (!response.ok) {
@@ -484,8 +504,9 @@ export default function Rooms({ theme = 'dark' }) {
   // ===== DATABASE DELETE FUNCTION =====
   async function doDelete() {
     try {
-      const response = await fetch(`http://localhost:8080/rooms/${deleteTarget}`, {
-        method: 'DELETE'
+      const response = await fetch(`${backendUrl}/rooms/${deleteTarget}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` }
       });
       
       if (response.ok) {

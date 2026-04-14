@@ -50,6 +50,7 @@ function Sparkline({ data, color }) {
 export default function Overview({ theme = 'dark' }) {
 
   const navigate = useNavigate();
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   // ✅ ALL STATES (TOP PE — IMPORTANT FOR HOOK ERROR FIX)
   const [bookings, setBookings] = useState([]);
@@ -78,7 +79,7 @@ export default function Overview({ theme = 'dark' }) {
 
   // ✅ FETCH BOOKINGS
   useEffect(() => {
-    fetch("http://localhost:8080/booking/all")
+    fetch(`${backendUrl}/booking/all`)
       .then(res => res.json())
       .then(data => {
         setBookings(data.bookings || []);

@@ -32,10 +32,18 @@ function exportCSV(bookings) {
 
 export default function Bookings({ theme = 'dark' }) {
   const [bookings, setBookings] = useState([]);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
  useEffect(() => {
-  fetch("http://localhost:8080/booking/all")
-    .then(res => res.json())
+  fetch(`${backendUrl}/booking/all`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}` // ✅ required
+    }
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to fetch bookings"); // ✅ error handling
+      return res.json();
+    })
     .then(data => {
 
       const mapped = data.bookings.map(b => ({

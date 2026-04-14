@@ -94,13 +94,19 @@ export default function Chats({ theme = 'dark' }) {
   const [mobileView, setMobileView]     = useState('list'); // 'list' | 'chat'
   const [isMobile, setIsMobile]         = useState(window.innerWidth <= 768);
   const messagesEndRef                  = useRef(null);
+  const backendUrl= import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+
 
   // ── Fetch Data from Backend (Port 8080) ────────────────────────
   useEffect(() => {
     const fetchChats = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('http://localhost:8080/api/chats'); 
+        const response = await fetch(`${backendUrl}/api/chats`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}` // ✅ required
+          }
+        });
         
         if (!response.ok) {
           throw new Error('Failed to fetch chat data');
@@ -166,8 +172,12 @@ export default function Chats({ theme = 'dark' }) {
 
     // Tell backend this chat was read
     try {
-      await fetch(`http://localhost:8080/api/chats/${c.id}/read`, {
+      await fetch(`${backendUrl}/api/chats/${c.id}/read`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("token")}` // ✅ required,
+        },
       });
     } catch (err) {
       console.error('Failed to mark as read in backend', err);
@@ -181,7 +191,7 @@ export default function Chats({ theme = 'dark' }) {
 
     // Tell backend to mark all as read
     try {
-      await fetch('http://localhost:8080/api/chats/mark-all-read', {
+      await fetch(`${backendUrl}/api/chats/mark-all-read`, {
         method: 'POST',
       });
     } catch (err) {

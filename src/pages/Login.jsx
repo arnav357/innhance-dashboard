@@ -10,6 +10,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
   const navigate = useNavigate();
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   useEffect(() => {
   const token = localStorage.getItem("token");
@@ -24,7 +25,7 @@ export default function Login() {
   setError("");
 
   try {
-    const res = await fetch("https://innhance-bot-production.up.railway.app/auth/login", {
+    const res = await fetch(`${backendUrl}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -33,6 +34,7 @@ export default function Login() {
     });
 
     const data = await res.json();
+    console.log("login response:" , data);
 
     if (!res.ok) {
       throw new Error(data.message || "Login failed");
@@ -40,8 +42,9 @@ export default function Login() {
 
     // ✅ save token
     localStorage.setItem("token", data.token);
-    localStorage.setItem("hotel", JSON.stringify(data.hotel));
-    localStorage.setItem("hotel", JSON.stringify(data.user));
+    // localStorage.setItem("hotel", JSON.stringify(data.hotel));
+    localStorage.setItem("user", JSON.stringify(data.user));
+
 
     // ✅ redirect
     navigate("/");

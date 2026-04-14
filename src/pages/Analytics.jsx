@@ -108,20 +108,20 @@ export default function Analytics({ theme = 'dark' }) {
   const [roomStats, setRoomStats]   = useState(DEFAULT_ROOM_DATA);
   const [weekStats, setWeekStats]   = useState(DEFAULT_WEEKLY_DATA);
   const [guestsList, setGuestsList] = useState(DEFAULT_TOP_GUESTS);
-  
   const [isLoading, setIsLoading]   = useState(true);
   const [error, setError]           = useState(null);
-
   const [period, setPeriod]   = useState('6M');
   const [isMobile, setMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setTablet] = useState(window.innerWidth <= 1100);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
   // ── ✅ Fetch Data from Backend (Port 8080) ─────────────────────
   useEffect(() => {
     const fetchAnalyticsData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('http://localhost:8080/api/analytics');
+        const response = await fetch(`${backendUrl}/api/analytics`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch analytics data');
