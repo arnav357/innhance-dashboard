@@ -209,28 +209,48 @@ function ImageUploader({ image, onChange }) {
   const fileRef = useRef();
   const [hovered, setHovered] = useState(false);
   function handleFile(e) {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => onChange(ev.target.result);
-    reader.readAsDataURL(file);
-  }
+  const file = e.target.files[0];
+  if (!file) return;
+
+  onChange({
+    file, // ✅ actual file (for upload later)
+    preview: URL.createObjectURL(file) // ✅ for UI preview
+  });
+}
   return (
     <div>
       <div onClick={() => fileRef.current.click()} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
         style={{ width: '100%', height: '140px', borderRadius: '12px', overflow: 'hidden', position: 'relative', cursor: 'pointer', border: `2px dashed ${hovered ? 'rgba(232,184,109,0.6)' : 'rgba(232,184,109,0.3)'}`, background: 'rgba(232,184,109,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-        {image ? (
-          <>
-            <img src={image} alt="Room" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: hovered ? 1 : 0, transition: 'opacity 0.2s' }}>
-              <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>📷 Change Image</span>
-            </div>
-          </>
-        ) : (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', marginBottom: '6px' }}>📷</div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: '500' }}>Click to upload room image</div>
-          </div>
-        )}
+        {image && (image.preview || typeof image === "string") ? (
+  <>
+    <img
+      src={image?.preview || image}
+      alt="Room"
+      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+    />
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      opacity: hovered ? 1 : 0,
+      transition: 'opacity 0.2s'
+    }}>
+      <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
+        📷 Change Image
+      </span>
+    </div>
+  </>
+) : (
+  <div style={{ textAlign: 'center' }}>
+    <div style={{ fontSize: '24px', marginBottom: '6px' }}>📷</div>
+    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: '500' }}>
+      Click to upload room image
+    </div>
+  </div>
+)}
       </div>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
       {image && (
@@ -385,75 +405,99 @@ export default function Rooms({ theme = 'dark' }) {
   const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
   const tagBg      = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
 
+
   // ===== DATABASE SAVE FUNCTION =====
   async function saveRoom(form) {
-    const roomNumbers = form.roomNumbers || [];
-    const total = roomNumbers.length;
-    const available = deriveAvailable(roomNumbers);
+  let imageUrl =
+    typeof form.image === "string" ? form.image : "";
 
-    const updatedData = {
-      name: form.type || 'Unnamed Room', 
-      price: Number(form.price) || 0,
-      totalRooms: total,
-      availableRooms: available,
-      description: form.description || '',
-      amenities: form.amenities || [],
-      image: form.image || '',
-      roomNumbers: roomNumbers,
-    };
+  // Upload if new image selected
+  if (form.image?.file) {
+    const formData = new FormData();
+    const hotelId = localStorage.getItem("hotelId");
 
-    try {
-      let response;
-      if (editingId) {
-        response = await fetch(`${backendUrl}/rooms/${editingId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem("token")}`
-           },
-          body: JSON.stringify(updatedData)
-        });
-      } else {
-        response = await fetch(`${backendUrl}/rooms/add`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem("token")}`
-           },
-          body: JSON.stringify(updatedData)
-        });
-      }
+    formData.append("image", form.image.file);
+    formData.append("hotelId", hotelId);
 
-      if (response.ok) {
-        const res = await fetch(`${backendUrl}/rooms/all`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          }
-        });
-        const data = await res.json();
-        
-        const mappedRooms = (data.rooms || []).map(r => ({
-          id: r._id,
-          type: r.name,
-          price: r.price,
-          total: r.totalRooms,
-          available: r.availableRooms,
-          description: r.description || "",
-          amenities: r.amenities || [],
-          image: r.image || "",
-          emoji: "🛏️",
-          roomNumbers: r.roomNumbers || []
-        }));
+    const uploadRes = await fetch(`${backendUrl}/rooms/upload-room-image`, {
+      method: "POST",
+      body: formData,
+    });
 
-        setRooms(mappedRooms);
-        setEditingId(null);
-        setShowAdd(false);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        console.error("Failed to save room to database");
-      }
-    } catch (err) {
-      console.error("Error connecting to server:", err);
+    if (!uploadRes.ok) {
+      console.error("Image upload failed");
+      return;
     }
+
+    const uploadData = await uploadRes.json();
+    imageUrl = uploadData.url;
   }
+
+  const roomNumbers = form.roomNumbers || [];
+  const total = roomNumbers.length;
+  const available = deriveAvailable(roomNumbers);
+
+  const updatedData = {
+    name: form.type || 'Unnamed Room',
+    price: Number(form.price) || 0,
+    totalRooms: total,
+    availableRooms: available,
+    description: form.description || '',
+    amenities: form.amenities || [],
+    image: imageUrl,
+    roomNumbers: roomNumbers,
+  };
+
+  try {
+    let response;
+
+    if (editingId) {
+      response = await fetch(`${backendUrl}/rooms/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+    } else {
+      response = await fetch(`${backendUrl}/rooms/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+    }
+
+    // refresh
+    const res = await fetch(`${backendUrl}/rooms/all`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    });
+
+    const data = await res.json();
+
+    setRooms(data.rooms.map(r => ({
+      id: r._id,
+      type: r.name,
+      price: r.price,
+      total: r.totalRooms,
+      available: r.availableRooms,
+      description: r.description || "",
+      amenities: r.amenities || [],
+      image: r.image || "",
+      emoji: "🛏️",
+      roomNumbers: r.roomNumbers || []
+    })));
+
+    setEditingId(null);
+    setShowAdd(false);
+
+  } catch (err) {
+    console.error(err);
+  }
+}
 
   // ===== TOGGLE BOOKING STATUS (Updates Database) =====
   async function toggleRoomBooked(roomId, roomIndex) {
