@@ -420,7 +420,7 @@ export default function Rooms({ theme = 'dark' }) {
     formData.append("hotelId", hotelId);
 
 
-    
+
     const uploadRes = await fetch(`${backendUrl}/rooms/upload-room-image`, {
       method: "POST",
       headers: {
@@ -442,6 +442,7 @@ export default function Rooms({ theme = 'dark' }) {
   const total = roomNumbers.length;
   const available = deriveAvailable(roomNumbers);
 
+
   const updatedData = {
     name: form.type || 'Unnamed Room',
     price: Number(form.price) || 0,
@@ -449,7 +450,7 @@ export default function Rooms({ theme = 'dark' }) {
     availableRooms: available,
     description: form.description || '',
     amenities: form.amenities || [],
-    image: imageUrl,
+    images: imageUrl ? [imageUrl] : [],
     roomNumbers: roomNumbers,
   };
 
@@ -491,7 +492,7 @@ export default function Rooms({ theme = 'dark' }) {
       available: r.availableRooms,
       description: r.description || "",
       amenities: r.amenities || [],
-      image: r.image || "",
+      image: r.images?.[0] || "",
       emoji: "🛏️",
       roomNumbers: r.roomNumbers || []
     })));
