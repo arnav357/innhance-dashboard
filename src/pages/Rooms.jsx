@@ -419,11 +419,11 @@ export default function Rooms({ theme = 'dark' }) {
     formData.append("image", form.image.file);
     formData.append("hotelId", hotelId);
 
+
     
     const uploadRes = await fetch(`${backendUrl}/rooms/upload-room-image`, {
       method: "POST",
       headers: {
-        "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: formData,
