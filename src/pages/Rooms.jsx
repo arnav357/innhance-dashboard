@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+// import ImageSlider from "../components/ImageSlider"
 
 const ALL_AMENITIES = [
   'Free WiFi', 'Breakfast', 'AC', 'TV', 'Mini Bar',
@@ -10,6 +11,126 @@ const ALL_AMENITIES = [
 // ── helpers ─────────────────────────────────────────────────────
 function deriveAvailable(roomNumbers) {
   return roomNumbers.filter(r => !r.booked).length;
+}
+
+function ImageSlider({ room, subtext }) {
+  const [index, setIndex] = useState(0);
+
+  const images = room.images || [];
+
+  function next() {
+    setIndex((prev) => (prev + 1) % images.length);
+  }
+
+  function prev() {
+    setIndex((prev) =>
+      prev === 0 ? images.length - 1 : prev - 1
+    );
+  }
+
+  if (!images.length) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        flexDirection: 'column',
+        gap: '6px'
+      }}>
+        <span style={{ fontSize: '28px' }}>🛏️</span>
+        <span style={{ fontSize: '12px', color: subtext }}>
+          No image
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <img
+        src={images[index]}
+        alt={room.type}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
+        }}
+      />
+
+      {/* Prev */}
+      {images.length > 1 && (
+        <button
+          onClick={prev}
+          style={{
+            position: 'absolute',
+            left: '8px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'rgba(0,0,0,0.5)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
+            cursor: 'pointer',
+            zIndex:5
+          }}
+        >
+          ‹
+        </button>
+      )}
+
+      {/* Next */}
+      {images.length > 1 && (
+        <button
+          onClick={next}
+          style={{
+            position: 'absolute',
+            right: '8px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'rgba(0,0,0,0.5)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
+            cursor: 'pointer',
+            zIndex:5,
+          }}
+        >
+          ›
+        </button>
+      )}
+
+      {/* Dots */}
+      {images.length > 1 && (
+        <div style={{
+          position: 'absolute',
+          bottom: '8px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '5px',
+          zIndex:5
+        }}>
+          {images.map((_, i) => (
+            <div
+              key={i}
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background:
+                  i === index ? '#fff' : 'rgba(255,255,255,0.4)'
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
 }
 
 // ── Confirm dialog ───────────────────────────────────────────────
@@ -384,7 +505,7 @@ export default function Rooms({ theme = 'dark' }) {
         available: r.availableRooms ?? 0,
         description: r.description || "",
         amenities: r.amenities || [],
-        image: r.image || "",
+        images: r.images || [],
         emoji: "🛏️",
         roomNumbers: r.roomNumbers || []
       }));
@@ -492,7 +613,7 @@ export default function Rooms({ theme = 'dark' }) {
       available: r.availableRooms,
       description: r.description || "",
       amenities: r.amenities || [],
-      image: r.images?.[0] || "",
+      images: r.images || [],
       emoji: "🛏️",
       roomNumbers: r.roomNumbers || []
     })));
@@ -530,7 +651,7 @@ export default function Rooms({ theme = 'dark' }) {
       availableRooms: newAvailable,
       description: roomToUpdate.description,
       amenities: roomToUpdate.amenities,
-      image: roomToUpdate.image,
+      images: roomToUpdate.images,
       roomNumbers: newNums
     };
 
@@ -656,10 +777,13 @@ export default function Rooms({ theme = 'dark' }) {
         {editingId && editingRoom && (
           <RoomForm key={`edit-${editingId}`} title={`✏️ Editing — ${editingRoom.type}`}
             initial={{
-              type: editingRoom.type || '', price: editingRoom.price || '',
+              type: editingRoom.type || '',
+               price: editingRoom.price || '',
               description: editingRoom.description || '',
-              amenities: editingRoom.amenities || [], image: editingRoom.image || '',
-              emoji: editingRoom.emoji || '🛏️', roomNumbers: editingRoom.roomNumbers || [],
+              amenities: editingRoom.amenities || [],
+               image: editingRoom.images?.[0] || '',
+              emoji: editingRoom.emoji || '🛏️',
+               roomNumbers: editingRoom.roomNumbers || [],
             }}
             onSave={saveRoom} onCancel={() => setEditingId(null)} isDark={isDark} isMobile={isMobile} />
         )}
@@ -681,16 +805,9 @@ export default function Rooms({ theme = 'dark' }) {
               }}>
 
                 <div style={{ height: isMobile ? '130px' : '150px', position: 'relative', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                  {room.image ? (
-                    <img src={room.image} alt={room.type} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '6px' }}>
-                      <span style={{ fontSize: '28px' }}>{room.emoji}</span>
-                      <span style={{ fontSize: '12px', color: subtext }}>No image</span>
-                    </div>
-                  )}
-                  {room.image && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)' }} />}
-                  {room.image && (
+                  <ImageSlider room={room} subtext={subtext} />
+                  {room.images?.length > 0 && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)',pointerEvents:'none' }} />}
+                  {room.images?.length > 0 && (
                     <div style={{ position: 'absolute', bottom: '10px', left: '12px' }}>
                       <div style={{ fontSize: '14px', fontWeight: '800', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>{room.type}</div>
                     </div>
@@ -704,7 +821,7 @@ export default function Rooms({ theme = 'dark' }) {
                 </div>
 
                 <div style={{ padding: isMobile ? '13px' : '16px' }}>
-                  {!room.image && <h3 style={{ fontSize: '15px', fontWeight: '700', color: text, marginBottom: '6px' }}>{room.type}</h3>}
+                  {!room.images?.length > 0 && <h3 style={{ fontSize: '15px', fontWeight: '700', color: text, marginBottom: '6px' }}>{room.type}</h3>}
                   {room.description && <p style={{ fontSize: '12px', color: subtext, marginBottom: '10px', lineHeight: '1.5' }}>{room.description}</p>}
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', borderRadius: '12px', marginBottom: '12px', background: isDark ? 'rgba(232,184,109,0.06)' : 'rgba(232,184,109,0.08)', border: '1px solid rgba(232,184,109,0.15)' }}>
