@@ -5,6 +5,10 @@ import {
   MessageCircle, BarChart3, LogOut,
   ChevronLeft, ChevronRight, Sun, Moon,
 } from 'lucide-react';
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+import { io } from "socket.io-client";
+import { jwtDecode } from "jwt-decode";
+
 
 const navGroups = [
   {
@@ -34,6 +38,35 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
   const hotelData = localStorage.getItem('user');
   const hotel = hotelData ? JSON.parse(hotelData) : {};
   const isDark = theme === 'dark';
+
+  useEffect(() => {
+  const socket = io(backendUrl);
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  const decoded = jwtDecode(token);
+  const hotelId = decoded.hotelId;
+
+  socket.on("connect", () => {
+    socket.emit("join_hotel_room", hotelId);
+    console.log("Connected to WebSocket, joined room:", hotelId);
+  });
+
+  socket.on("human_request", (data) => {
+  alert(
+`🔔 New Human Request
+
+📞 Phone: ${data.phone}
+💬 ${data.message}
+⏰ ${new Date(data.time).toLocaleString()}`
+  );
+
+  console.log(data);
+});
+
+  return () => socket.disconnect();
+}, []);
+
 
   useEffect(() => {
     function onResize() {

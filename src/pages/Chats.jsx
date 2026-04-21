@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 
 // ── Default fallback data ────────────────────────────────────────
 const DEFAULT_CUSTOMERS = [
@@ -206,6 +207,7 @@ export default function Chats({ theme = "dark" }) {
   const [replyText, setReplyText] = useState("");
   const [replyFile, setReplyFile] = useState(null);
   const fileInputRef = useRef(null);
+  const socketRef = useRef(null);
 
   // ── Fetch Data from Backend (Port 8080) ────────────────────────
   useEffect(() => {
@@ -252,6 +254,50 @@ export default function Chats({ theme = "dark" }) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  useEffect(() => {
+    const socket = io(backendUrl, {
+      transports: ["websocket"],
+    });
+
+    socketRef.current = socket;
+
+    const token = localStorage.getItem("token");
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const hotelId = payload.hotelId;
+
+      socket.emit("join_hotel_room", hotelId);
+
+      socket.on("refreshChats", async () => {
+        try {
+          const response = await fetch(`${backendUrl}/api/chats`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
+
+          const data = await response.json();
+
+          setAllCustomers(data);
+
+          if (selected) {
+            const updated = data.find((c) => c.id === selected.id);
+            if (updated) setSelected(updated);
+          } else if (data.length > 0) {
+            setSelected(data[0]);
+          }
+        } catch (err) {
+          console.log("Live refresh failed");
+        }
+      });
+    } catch (err) {
+      console.log("Socket auth failed");
+    }
+
+    return () => socket.disconnect();
+  }, [backendUrl, selected]);
 
   // Auto-scroll to bottom on conversation switch
   useEffect(() => {
@@ -315,10 +361,10 @@ export default function Chats({ theme = "dark" }) {
     try {
       await fetch(`${backendUrl}/api/chats/mark-all-read`, {
         method: "POST",
-        headers:{
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem("token")}`, 
-        }
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
     } catch (err) {
       console.error("Failed to mark all as read in backend", err);
@@ -328,7 +374,10 @@ export default function Chats({ theme = "dark" }) {
   async function switchToHuman() {
     await fetch(`${backendUrl}/api/chats/${selected.id}/mode`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
       body: JSON.stringify({ mode: "human" }),
     });
 
@@ -338,7 +387,10 @@ export default function Chats({ theme = "dark" }) {
   async function switchToBot() {
     await fetch(`${backendUrl}/api/chats/${selected.id}/mode`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
       body: JSON.stringify({ mode: "bot" }),
     });
 
@@ -1208,143 +1260,78 @@ export default function Chats({ theme = "dark" }) {
                         flexShrink: 0,
                       }}
                     >
-                      {selected?.mode === "human" ? (
-                        <>
-                          <div
-                            style={{
-                              width: "32px",
-                              height: "32px",
-                              borderRadius: "9px",
-                              background:
-                                "linear-gradient(135deg,#22c55e,#16a34a)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "14px",
-                            }}
-                          >
-                            👤
-                          </div>
+                      <>
+                        <div
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "9px",
+                            background:
+                              "linear-gradient(135deg,#22c55e,#16a34a)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "14px",
+                          }}
+                        >
+                          💬
+                        </div>
 
-                          {/* Upload button */}
-                          <button
-                            onClick={() => fileInputRef.current.click()}
-                            style={{
-                              padding: "10px",
-                              borderRadius: "10px",
-                              border: `1px solid ${cardBorder}`,
-                              background: inputBg,
-                              cursor: "pointer",
-                            }}
-                          >
-                            📎
-                          </button>
+                        <button
+                          onClick={() => fileInputRef.current.click()}
+                          style={{
+                            padding: "10px",
+                            borderRadius: "10px",
+                            border: `1px solid ${cardBorder}`,
+                            background: inputBg,
+                            cursor: "pointer",
+                          }}
+                        >
+                          📎
+                        </button>
 
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*,video/*"
-                            style={{ display: "none" }}
-                            onChange={(e) => setReplyFile(e.target.files[0])}
-                          />
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*,video/*"
+                          style={{ display: "none" }}
+                          onChange={(e) => setReplyFile(e.target.files[0])}
+                        />
 
-                          <input
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder={
-                              replyFile
-                                ? `Attached: ${replyFile.name}`
-                                : "Type a reply..."
-                            }
-                            style={{
-                              flex: 1,
-                              padding: "10px 14px",
-                              borderRadius: "10px",
-                              border: `1px solid ${cardBorder}`,
-                              background: inputBg,
-                              color: text,
-                              outline: "none",
-                            }}
-                          />
+                        <input
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder={
+                            replyFile
+                              ? `Attached: ${replyFile.name}`
+                              : "Type a reply..."
+                          }
+                          style={{
+                            flex: 1,
+                            padding: "10px 14px",
+                            borderRadius: "10px",
+                            border: `1px solid ${cardBorder}`,
+                            background: inputBg,
+                            color: text,
+                            outline: "none",
+                          }}
+                        />
 
-                          <button
-                            onClick={sendManualReply}
-                            style={{
-                              padding: "10px 14px",
-                              borderRadius: "10px",
-                              background: "#22c55e",
-                              color: "#fff",
-                              border: "none",
-                              fontWeight: "700",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Send
-                          </button>
-
-                          <button
-                            onClick={switchToBot}
-                            style={{
-                              padding: "10px",
-                              borderRadius: "10px",
-                              border: `1px solid ${cardBorder}`,
-                              background: "transparent",
-                              cursor: "pointer",
-                            }}
-                          >
-                            🤖
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <div
-                            className="bot-icon"
-                            style={{
-                              width: "32px",
-                              height: "32px",
-                              borderRadius: "9px",
-                              background:
-                                "linear-gradient(135deg,#e8b86d,#c9973a)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "14px",
-                            }}
-                          >
-                            🤖
-                          </div>
-
-                          <div style={{ flex: 1 }}>
-                            <div
-                              style={{
-                                fontSize: "12px",
-                                fontWeight: "700",
-                                color: "#e8b86d",
-                              }}
-                            >
-                              AI Bot is handling replies
-                            </div>
-                            <div style={{ fontSize: "11px", color: subtext }}>
-                              Automatic replies via WhatsApp
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={switchToHuman}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: "8px",
-                              background: "#22c55e",
-                              color: "#fff",
-                              border: "none",
-                              fontWeight: "700",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Take Over
-                          </button>
-                        </>
-                      )}
+                        <button
+                          onClick={sendManualReply}
+                          style={{
+                            padding: "10px 14px",
+                            borderRadius: "10px",
+                            background: "#22c55e",
+                            color: "#fff",
+                            border: "none",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Send
+                        </button>
+                      </>
                     </div>
                   </div>
                 </div>
