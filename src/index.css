@@ -10,10 +10,11 @@ html {
 
 body {
   height: 100%;
-  background: #080812;
+  background: #11141e;
   color: #fff;
   font-family: 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-size: 15px;
 }
 
 #root {
@@ -34,7 +35,7 @@ body {
 
 html, body, #root {
   height: 100%;
-  background: #0a0a14;
+  background: #11141e;
   color: #fff;
   font-family: 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -79,4 +80,10 @@ html, body, #root {
 @media (max-width: 700px) {
   table { font-size: 12px !important; }
   th, td { padding: 10px 10px !important; }
+}
+
+/* ===== GLOBAL ANIMATIONS ===== */
+@keyframes floatingCard {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
 }

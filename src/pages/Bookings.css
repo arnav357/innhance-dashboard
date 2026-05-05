@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+@keyframes fadeInUp { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)} }
+@keyframes slideIn  { from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)} }
+@keyframes modalIn  { from{opacity:0;transform:scale(0.96) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)} }
+@keyframes sheetIn  { from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)} }
+
+.bk-root { font-family:'DM Sans','Segoe UI',system-ui,sans-serif; }
+.booking-row { transition:background 0.15s ease; cursor:pointer; }
+.booking-row.dark:hover { background:rgba(255,255,255,0.03)!important; }
+.booking-row.light:hover { background:rgba(0,0,0,0.02)!important; }
+.filter-btn  { transition:all 0.18s ease; cursor:pointer; }
+.action-btn  { transition:all 0.18s ease; cursor:pointer; }
+.action-btn:hover { transform:translateY(-1px); opacity:0.85; }
+.sort-th:hover { color:#e8b86d!important; }
+.search-input { transition:all 0.2s; }
+.search-input:focus { outline:none!important; border-color:rgba(232,184,109,0.5)!important; box-shadow:0 0 0 3px rgba(232,184,109,0.08)!important; }
+.modal-input:focus { outline:none!important; border-color:rgba(232,184,109,0.5)!important; }
+.export-btn:hover { background:rgba(232,184,109,0.1)!important; color:#e8b86d!important; border-color:rgba(232,184,109,0.3)!important; }
+.add-btn:hover { background:rgba(232,184,109,0.88)!important; transform:translateY(-1px); box-shadow:0 8px 24px rgba(232,184,109,0.35)!important; }
+.view-btn { opacity:0.5; transition:all .18s ease!important; }
+.view-btn:hover { opacity:1!important; background:rgba(232,184,109,0.12)!important; border-color:rgba(232,184,109,0.4)!important; color:#e8b86d!important; }
+
+/* Floating Animations */
+.bk-stat-card {
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  animation: floatingCard 6s ease-in-out infinite;
+}
+.bk-stat-card:nth-child(2) { animation-delay: -1.5s; }
+.bk-stat-card:nth-child(3) { animation-delay: -3s; }
+.bk-stat-card:nth-child(4) { animation-delay: -4.5s; }
+.bk-stat-card:hover { transform: translateY(-4px); }
+
+.booking-card {
+  transition: transform 0.15s ease;
+  animation: floatingCard 7s ease-in-out infinite;
+}
+.booking-card:nth-child(even) { animation-delay: -3.5s; }

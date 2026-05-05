@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import "./Bookings.css";
 
 const DEFAULT_BOOKINGS = [
   {
@@ -151,7 +154,19 @@ function exportCSV(bookings) {
 }
 
 export default function Bookings({ theme = "dark" }) {
+  const container = useRef();
+  
   const [bookings, setBookings] = useState([]);
+  
+  useGSAP(() => {
+    if (bookings.length === 0) return;
+    const tl = gsap.timeline();
+    tl.fromTo('.bk-header', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'expo.out' })
+      .fromTo('.bk-stat-card', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: 'expo.out' }, "-=0.5")
+      .fromTo('.bk-toolbar', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'expo.out' }, "-=0.4")
+      .fromTo('.booking-row, .booking-card', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.05, ease: 'expo.out' }, "-=0.3");
+  }, { scope: container, dependencies: [bookings] });
+
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 async function fetchBookings() {
@@ -237,15 +252,15 @@ useEffect(() => {
   }, [backendUrl]);
 
   const isDark = theme === "dark";
-  const text = isDark ? "#fff" : "#0f172a";
-  const subtext = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.55)";
-  const cardBg = isDark ? "rgba(255,255,255,0.03)" : "#ffffff";
-  const cardBorder = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)";
-  const tableBorder = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.07)";
-  const tableHeader = isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.55)";
-  const rowHover = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
-  const inputBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
-  const modalBg = isDark ? "#0f0f1e" : "#ffffff";
+  const text = isDark ? "#fff" : "#1E1E2F";
+  const subtext = isDark ? "rgba(255,255,255,0.45)" : "#6B6B7A";
+  const cardBg = isDark ? "rgba(255,255,255,0.03)" : "#FDFAF4";
+  const cardBorder = isDark ? "rgba(255,255,255,0.07)" : "rgba(47,62,52,0.13)";
+  const tableBorder = isDark ? "rgba(255,255,255,0.05)" : "rgba(47,62,52,0.1)";
+  const tableHeader = isDark ? "rgba(255,255,255,0.3)" : "#6B6B7A";
+  const rowHover = isDark ? "rgba(255,255,255,0.03)" : "rgba(47,62,52,0.04)";
+  const inputBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(47,62,52,0.05)";
+  const modalBg = isDark ? "#0f0f1e" : "#CFE1B9";
 
   // ── Counts & revenue ───────────────────────────────────────────
   const counts = {
@@ -418,7 +433,7 @@ async function confirmBooking(id) {
         style={{
           textAlign: "left",
           padding: "11px 16px",
-          fontSize: "10px",
+          fontSize: "12px",
           color: active ? "#e8b86d" : tableHeader,
           textTransform: "uppercase",
           letterSpacing: "0.5px",
@@ -481,7 +496,7 @@ async function confirmBooking(id) {
           <div>
             <span
               style={{
-                fontSize: "10px",
+                fontSize: "12px",
                 fontFamily: "monospace",
                 fontWeight: "700",
                 color: subtext,
@@ -499,7 +514,7 @@ async function confirmBooking(id) {
             <div style={{ fontWeight: "700", color: text, fontSize: "14px" }}>
               {b.name}
             </div>
-            <div style={{ fontSize: "11px", color: subtext, marginTop: "2px" }}>
+            <div style={{ fontSize: "13px", color: subtext, marginTop: "2px" }}>
               {b.phone}
             </div>
           </div>
@@ -548,7 +563,7 @@ async function confirmBooking(id) {
             <div key={item.label}>
               <div
                 style={{
-                  fontSize: "9px",
+                  fontSize: "11px",
                   color: subtext,
                   fontWeight: "700",
                   textTransform: "uppercase",
@@ -576,7 +591,7 @@ async function confirmBooking(id) {
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span
               style={{
-                fontSize: "15px",
+                fontSize: "13px",
                 fontWeight: "800",
                 color: isDark ? "#e8b86d" : "#b45309",
               }}
@@ -660,7 +675,7 @@ async function confirmBooking(id) {
 
   // ── Label style helper ─────────────────────────────────────────
   const labelStyle = {
-    fontSize: "11px",
+    fontSize: "13px",
     fontWeight: "700",
     color: subtext,
     textTransform: "uppercase",
@@ -683,37 +698,12 @@ async function confirmBooking(id) {
 
   return (
     <div>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)} }
-        @keyframes slideIn  { from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)} }
-        @keyframes modalIn  { from{opacity:0;transform:scale(0.96) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)} }
-        @keyframes sheetIn  { from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)} }
-
-        .bk-root { font-family:'DM Sans','Segoe UI',system-ui,sans-serif; }
-        .booking-row { transition:background 0.15s ease; cursor:pointer; }
-        .booking-row:hover { background:${rowHover}!important; }
-        .filter-btn  { transition:all 0.18s ease; cursor:pointer; }
-        .action-btn  { transition:all 0.18s ease; cursor:pointer; }
-        .action-btn:hover { transform:translateY(-1px); opacity:0.85; }
-        .sort-th:hover { color:#e8b86d!important; }
-        .search-input { transition:all 0.2s; }
-        .search-input::placeholder { color:${subtext}; }
-        .search-input:focus { outline:none!important; border-color:rgba(232,184,109,0.5)!important; box-shadow:0 0 0 3px rgba(232,184,109,0.08)!important; }
-        .modal-input::placeholder { color:${subtext}; }
-        .modal-input:focus { outline:none!important; border-color:rgba(232,184,109,0.5)!important; }
-        .export-btn:hover { background:rgba(232,184,109,0.1)!important; color:#e8b86d!important; border-color:rgba(232,184,109,0.3)!important; }
-        .add-btn:hover { background:rgba(232,184,109,0.88)!important; transform:translateY(-1px); box-shadow:0 8px 24px rgba(232,184,109,0.35)!important; }
-        .view-btn { opacity:0.5; transition:all .18s ease!important; }
-        .view-btn:hover { opacity:1!important; background:rgba(232,184,109,0.12)!important; border-color:rgba(232,184,109,0.4)!important; color:#e8b86d!important; }
-      `}</style>
-
-      <div className="bk-root">
+      <div className="bk-root" ref={container}>
         {/* ── Header ── */}
         <div
+          className="bk-header"
           style={{
             marginBottom: "20px",
-            animation: "fadeInUp 0.5s ease forwards",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
@@ -724,7 +714,7 @@ async function confirmBooking(id) {
           <div>
             <h1
               style={{
-                fontSize: isMobile ? "20px" : "24px",
+                fontSize: isMobile ? "24px" : "30px",
                 fontWeight: "800",
                 color: text,
                 letterSpacing: "-0.5px",
@@ -733,7 +723,7 @@ async function confirmBooking(id) {
             >
               Bookings
             </h1>
-            <p style={{ color: subtext, fontSize: "13px" }}>
+            <p style={{ color: subtext, fontSize: "14.5px" }}>
               Manage and track all hotel bookings ·{" "}
               <span style={{ color: "#f59e0b", fontWeight: "700" }}>
                 {counts.pending} pending action{counts.pending !== 1 ? "s" : ""}
@@ -794,44 +784,44 @@ async function confirmBooking(id) {
             gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)",
             gap: "12px",
             marginBottom: "20px",
-            animation: "fadeInUp 0.5s ease 0.05s both",
           }}
         >
           {[
             {
               label: "Total Bookings",
               value: counts.all,
-              color: "#e8b86d",
+              color: isDark ? "#e8b86d" : "#2568b9",
               icon: "📋",
-              bg: "rgba(232,184,109,0.08)",
-              border: "rgba(232,184,109,0.15)",
+              bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
+              border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
             },
             {
               label: "Confirmed",
               value: counts.confirmed,
-              color: "#22c55e",
+              color: isDark ? "#e8b86d" : "#2568b9",
               icon: "✅",
-              bg: "rgba(34,197,94,0.08)",
-              border: "rgba(34,197,94,0.15)",
+              bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
+              border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
             },
             {
               label: "Pending",
               value: counts.pending,
-              color: "#f59e0b",
+              color: isDark ? "#e8b86d" : "#2568b9",
               icon: "⏳",
-              bg: "rgba(245,158,11,0.08)",
-              border: "rgba(245,158,11,0.15)",
+              bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
+              border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
             },
             {
               label: "Total Revenue",
               value: `₹${totalRevenue.toLocaleString()}`,
-              color: "#60a5fa",
+              color: isDark ? "#e8b86d" : "#2568b9",
               icon: "💰",
-              bg: "rgba(96,165,250,0.08)",
-              border: "rgba(96,165,250,0.15)",
+              bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
+              border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
             },
           ].map((s, i) => (
             <div
+              className="bk-stat-card"
               key={i}
               style={{
                 background: isDark
@@ -841,7 +831,6 @@ async function confirmBooking(id) {
                 borderRadius: "14px",
                 padding: isMobile ? "14px" : "16px 18px",
                 boxShadow: isDark ? "none" : "0 2px 12px rgba(0,0,0,0.06)",
-                animation: `fadeInUp 0.5s ease ${i * 0.06}s both`,
               }}
             >
               <div
@@ -854,7 +843,7 @@ async function confirmBooking(id) {
               >
                 <span
                   style={{
-                    fontSize: "10px",
+                    fontSize: "12px",
                     color: subtext,
                     fontWeight: "700",
                     textTransform: "uppercase",
@@ -865,7 +854,7 @@ async function confirmBooking(id) {
                 </span>
                 <span
                   style={{
-                    fontSize: "16px",
+                    fontSize: "14px",
                     width: "30px",
                     height: "30px",
                     borderRadius: "8px",
@@ -880,7 +869,7 @@ async function confirmBooking(id) {
               </div>
               <div
                 style={{
-                  fontSize: isMobile ? "20px" : "24px",
+                  fontSize: isMobile ? "24px" : "28px",
                   fontWeight: "800",
                   color: s.color,
                   letterSpacing: "-0.5px",
@@ -899,7 +888,6 @@ async function confirmBooking(id) {
             gridTemplateColumns:
               selectedBooking && !isMobile && !isTablet ? "1fr 300px" : "1fr",
             gap: "16px",
-            animation: "fadeInUp 0.5s ease 0.1s both",
           }}
         >
           {/* ── Table card ── */}
@@ -914,6 +902,7 @@ async function confirmBooking(id) {
           >
             {/* Filters + Search */}
             <div
+              className="bk-toolbar"
               style={{
                 padding: isMobile ? "12px 14px" : "14px 20px",
                 borderBottom: `1px solid ${tableBorder}`,
@@ -1066,7 +1055,7 @@ async function confirmBooking(id) {
                         style={{
                           textAlign: "left",
                           padding: "11px 16px",
-                          fontSize: "10px",
+                          fontSize: "12px",
                           color: tableHeader,
                           textTransform: "uppercase",
                           letterSpacing: "0.5px",
@@ -1083,7 +1072,7 @@ async function confirmBooking(id) {
                         style={{
                           textAlign: "left",
                           padding: "11px 16px",
-                          fontSize: "10px",
+                          fontSize: "12px",
                           color: tableHeader,
                           textTransform: "uppercase",
                           letterSpacing: "0.5px",
@@ -1099,7 +1088,7 @@ async function confirmBooking(id) {
                         style={{
                           textAlign: "center",
                           padding: "11px 8px",
-                          fontSize: "10px",
+                          fontSize: "12px",
                           color:
                             sortCol === "bookingStatus"
                               ? "#e8b86d"
@@ -1147,7 +1136,7 @@ async function confirmBooking(id) {
                         return (
                           <tr
                             key={b.id}
-                            className="booking-row"
+                            className={`booking-row ${isDark ? 'dark' : 'light'}`}
                             onMouseEnter={() => setHoveredRow(b.id)}
                             onMouseLeave={() => setHoveredRow(null)}
                             onClick={() =>
@@ -1166,7 +1155,7 @@ async function confirmBooking(id) {
                             }}
                           >
                             {/* <td style={{ padding: '13px 16px' }}>
-                            <span style={{ fontSize: '10px', fontFamily: 'monospace', fontWeight: '700', color: subtext, background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', padding: '2px 7px', borderRadius: '5px' }}>
+                            <span style={{ fontSize: '10px', fontFamily: 'monospace', fontWeight: '700', color: subtext, background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', padding: '2px 7px', borderRadius: '14px' }}>
                               #BK{String(b.id).padStart(4,'0')}
                             </span>
                           </td> */}
@@ -1182,7 +1171,7 @@ async function confirmBooking(id) {
                               </div>
                               <span
                                 style={{
-                                  fontSize: "10px",
+                                  fontSize: "12px",
                                   fontWeight: "700",
                                   color: src.color,
                                   background: src.bg,
@@ -1200,7 +1189,7 @@ async function confirmBooking(id) {
                               style={{
                                 padding: "13px 16px",
                                 color: subtext,
-                                fontSize: "12px",
+                                fontSize: "14px",
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1210,7 +1199,7 @@ async function confirmBooking(id) {
                               style={{
                                 padding: "13px 16px",
                                 color: text,
-                                fontSize: "13px",
+                                fontSize: "14px",
                                 fontWeight: "500",
                               }}
                             >
@@ -1220,7 +1209,7 @@ async function confirmBooking(id) {
                               style={{
                                 padding: "13px 16px",
                                 color: subtext,
-                                fontSize: "13px",
+                                fontSize: "14px",
                                 textAlign: "center",
                               }}
                             >
@@ -1230,7 +1219,7 @@ async function confirmBooking(id) {
                               style={{
                                 padding: "13px 16px",
                                 color: subtext,
-                                fontSize: "12px",
+                                fontSize: "13px",
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1239,7 +1228,7 @@ async function confirmBooking(id) {
                             <td style={{ padding: "13px 16px" }}>
                               <span
                                 style={{
-                                  fontSize: "11px",
+                                  fontSize: "13px",
                                   fontWeight: "700",
                                   background: isDark
                                     ? "rgba(255,255,255,0.06)"
@@ -1433,14 +1422,14 @@ async function confirmBooking(id) {
                 gap: "6px",
               }}
             >
-              <span style={{ fontSize: "12px", color: subtext }}>
+              <span style={{ fontSize: "14px", color: subtext }}>
                 Showing{" "}
                 <strong style={{ color: text }}>{filtered.length}</strong> of{" "}
                 <strong style={{ color: text }}>{bookings.length}</strong>{" "}
                 bookings
               </span>
               {!isMobile && (
-                <span style={{ fontSize: "11px", color: subtext }}>
+                <span style={{ fontSize: "13px", color: subtext }}>
                   💡 Click a row to view details
                 </span>
               )}
@@ -1530,7 +1519,7 @@ async function confirmBooking(id) {
                     </div>
                     <div
                       style={{
-                        fontSize: "12px",
+                        fontSize: "13.5px",
                         color: subtext,
                         marginTop: "2px",
                       }}
@@ -1603,7 +1592,7 @@ async function confirmBooking(id) {
                   >
                     <span
                       style={{
-                        fontSize: "12px",
+                        fontSize: "13.5px",
                         color: subtext,
                         fontWeight: "500",
                       }}
@@ -1762,7 +1751,7 @@ async function confirmBooking(id) {
                 }}
               >
                 <h3
-                  style={{ fontSize: "15px", fontWeight: "700", color: text }}
+                  style={{ fontSize: "13px", fontWeight: "700", color: text }}
                 >
                   Booking Details
                 </h3>
@@ -1794,7 +1783,7 @@ async function confirmBooking(id) {
                       style={{
                         fontWeight: "700",
                         color: text,
-                        fontSize: "16px",
+                        fontSize: "14px",
                       }}
                     >
                       {selectedBooking.name}
@@ -2017,7 +2006,7 @@ async function confirmBooking(id) {
                 }}
               >
                 <h3
-                  style={{ fontSize: "15px", fontWeight: "700", color: text }}
+                  style={{ fontSize: "13px", fontWeight: "700", color: text }}
                 >
                   New Booking
                 </h3>
@@ -2233,7 +2222,7 @@ async function confirmBooking(id) {
                         </span>
                         <span
                           style={{
-                            fontSize: "16px",
+                            fontSize: "14px",
                             fontWeight: "800",
                             color: isDark ? "#e8b86d" : "#b45309",
                           }}

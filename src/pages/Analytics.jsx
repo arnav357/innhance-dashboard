@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import {
   AreaChart, Area, BarChart, Bar,
   PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import './Analytics.css';
 
 // ── Default Fallback Data ────────────────────────────────────────
 const DEFAULT_REVENUE = [
@@ -53,10 +56,10 @@ const PERIOD_MONTHS = { '1W': 1, '1M': 1, '3M': 3, '6M': 6, '1Y': 6 };
 function CustomTooltip({ active, payload, label, isDark }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: isDark ? 'rgba(10,10,20,0.97)' : '#fff', border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, borderRadius: '12px', padding: '12px 16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+    <div style={{ background: isDark ? 'rgba(10,10,20,0.97)' : '#fff', border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`, borderRadius: '16px', padding: '12px 16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
       <p style={{ fontSize: '12px', fontWeight: '700', color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)', marginBottom: '6px' }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ fontSize: '13px', fontWeight: '700', color: p.color, margin: '2px 0' }}>
+        <p key={i} style={{ fontSize: '11px', fontWeight: '700', color: p.color, margin: '2px 0' }}>
           {p.name}: {p.name === 'Revenue' ? `₹${Number(p.value).toLocaleString()}` : p.value}
         </p>
       ))}
@@ -103,6 +106,8 @@ function exportReport(revenueData, roomData, topGuests) {
 
 // ── Main component ───────────────────────────────────────────────
 export default function Analytics({ theme = 'dark' }) {
+  const container = useRef();
+  
   // ── ✅ Backend States ──────────────────────────────────────────
   const [allRevenue, setAllRevenue] = useState(DEFAULT_REVENUE);
   const [roomStats, setRoomStats]   = useState(DEFAULT_ROOM_DATA);
@@ -113,6 +118,14 @@ export default function Analytics({ theme = 'dark' }) {
   const [period, setPeriod]   = useState('6M');
   const [isMobile, setMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setTablet] = useState(window.innerWidth <= 1100);
+
+  useGSAP(() => {
+    if (isLoading) return;
+    const tl = gsap.timeline();
+    tl.from('.an-header', { y: 30, opacity: 0, duration: 1.2, ease: 'power4.out' })
+      .from('.kpi-card', { y: 20, opacity: 0, duration: 1, stagger: 0.05, ease: 'power4.out' }, "-=1")
+      .from('.an-chart-card', { y: 20, opacity: 0, duration: 1, stagger: 0.1, ease: 'power4.out' }, "-=0.8");
+  }, { scope: container, dependencies: [isLoading] });
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -158,12 +171,12 @@ export default function Analytics({ theme = 'dark' }) {
   }, []);
 
   const isDark      = theme === 'dark';
-  const text        = isDark ? '#fff'                   : '#0f172a';
-  const subtext     = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)';
-  const cardBg      = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff';
-  const cardBorder  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.09)';
-  const gridColor   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const axisColor   = isDark ? 'rgba(255,255,255,0.3)'  : 'rgba(0,0,0,0.4)';
+  const text        = isDark ? '#fff'                   : '#1E1E2F';
+  const subtext     = isDark ? 'rgba(255,255,255,0.45)' : '#6B6B7A';
+  const cardBg      = isDark ? 'rgba(255,255,255,0.03)' : '#FDFAF4';
+  const cardBorder  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(47,62,52,0.13)';
+  const gridColor   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(47,62,52,0.1)';
+  const axisColor   = isDark ? 'rgba(255,255,255,0.3)'  : '#6B6B7A';
 
   // Slice data based on selected period
   const months      = PERIOD_MONTHS[period] || 6;
@@ -176,12 +189,12 @@ export default function Analytics({ theme = 'dark' }) {
   const totalGuest   = guestsList.reduce((s, g) => s + g.spentNum, 0);
 
   const kpis = [
-    { label: 'Total Revenue',   value: `₹${totalRevenue.toLocaleString()}`, change: '+28%', trend: 'up', color: '#22c55e', icon: '💰', sub: `Last ${period}` },
-    { label: 'Total Bookings',  value: `${totalBookings}`,                  change: '+18%', trend: 'up', color: '#e8b86d', icon: '📅', sub: `Last ${period}` },
-    { label: 'Avg Occupancy',   value: `${avgOccupancy}%`,                  change: '+12%', trend: 'up', color: '#60a5fa', icon: '🏨', sub: 'Across all rooms' },
-    { label: 'Avg Stay',        value: '2.4 nights',                        change: '+0.3', trend: 'up', color: '#a78bfa', icon: '🌙', sub: 'Per booking' },
-    { label: 'Top Room',        value: 'Deluxe',                            change: '45% share', trend: 'up', color: '#f59e0b', icon: '🌟', sub: 'Most booked' },
-    { label: 'Repeat Guests',   value: '34%',                               change: '+8%',  trend: 'up', color: '#ec4899', icon: '🔁', sub: 'Return rate' },
+    { label: 'Total Revenue',   value: `₹${totalRevenue.toLocaleString()}`, change: '+28%', trend: 'up', color: isDark ? '#e8b86d' : '#2568b9', icon: '💰', sub: `Last ${period}` },
+    { label: 'Total Bookings',  value: `${totalBookings}`,                  change: '+18%', trend: 'up', color: isDark ? '#e8b86d' : '#2568b9', icon: '📅', sub: `Last ${period}` },
+    { label: 'Avg Occupancy',   value: `${avgOccupancy}%`,                  change: '+12%', trend: 'up', color: isDark ? '#e8b86d' : '#2568b9', icon: '🏨', sub: 'Across all rooms' },
+    { label: 'Avg Stay',        value: '2.4 nights',                        change: '+0.3', trend: 'up', color: isDark ? '#e8b86d' : '#2568b9', icon: '🌙', sub: 'Per booking' },
+    { label: 'Top Room',        value: 'Deluxe',                            change: '45% share', trend: 'up', color: isDark ? '#e8b86d' : '#2568b9', icon: '🌟', sub: 'Most booked' },
+    { label: 'Repeat Guests',   value: '34%',                               change: '+8%',  trend: 'up', color: isDark ? '#e8b86d' : '#2568b9', icon: '🔁', sub: 'Return rate' },
   ];
 
   // Grid columns
@@ -204,34 +217,22 @@ export default function Analytics({ theme = 'dark' }) {
 
   return (
     <div>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)} }
-        .an-root { font-family:'DM Sans','Segoe UI',system-ui,sans-serif; }
-        .kpi-card { transition:transform 0.2s ease,box-shadow 0.2s ease; }
-        .kpi-card:hover { transform:translateY(-3px)!important; }
-        .period-btn { transition:all 0.18s ease; cursor:pointer; }
-        .export-btn:hover { background:rgba(232,184,109,0.15)!important; color:#e8b86d!important; border-color:rgba(232,184,109,0.4)!important; }
-        .guest-row { transition:background 0.15s; }
-        .guest-row:hover { background:${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}!important; }
-      `}</style>
-
-      <div className="an-root">
+      <div className="an-root" ref={container}>
 
         {/* ── Header ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '20px', animation: 'fadeInUp 0.5s ease forwards', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="an-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '800', color: text, letterSpacing: '-0.5px', marginBottom: '4px' }}>Analytics</h1>
-            <p style={{ color: subtext, fontSize: '13px' }}>Track your hotel performance and trends</p>
+            <h1 style={{ fontSize: isMobile ? '24px' : '30px', fontWeight: '800', color: text, letterSpacing: '-0.5px', marginBottom: '4px' }}>Analytics</h1>
+            <p style={{ color: subtext, fontSize: '14px' }}>Track your hotel performance and trends</p>
           </div>
 
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Period selector */}
-            <div style={{ display: 'flex', gap: '4px', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', borderRadius: '12px', padding: '4px' }}>
+            <div style={{ display: 'flex', gap: '4px', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', borderRadius: '14px', padding: '4px' }}>
               {['1W','1M','3M','6M','1Y'].map(p => (
                 <button key={p} className="period-btn" onClick={() => setPeriod(p)} style={{
-                  padding: isMobile ? '5px 10px' : '6px 14px', borderRadius: '8px',
-                  fontSize: '12px', fontWeight: '700', border: 'none', fontFamily: 'inherit',
+                  padding: isMobile ? '5px 10px' : '6px 14px', borderRadius: '10px',
+                  fontSize: '13px', fontWeight: '700', border: 'none', fontFamily: 'inherit',
                   background: period === p ? isDark ? 'rgba(232,184,109,0.2)' : 'rgba(232,184,109,0.25)' : 'transparent',
                   color: period === p ? '#e8b86d' : subtext,
                   boxShadow: period === p ? '0 2px 8px rgba(232,184,109,0.15)' : 'none',
@@ -241,7 +242,7 @@ export default function Analytics({ theme = 'dark' }) {
 
             {/* Export button */}
             <button className="export-btn" onClick={() => exportReport(revenueData, roomStats, guestsList)} style={{
-              padding: isMobile ? '7px 10px' : '8px 14px', borderRadius: '10px',
+              padding: isMobile ? '7px 10px' : '8px 14px', borderRadius: '12px',
               background: 'transparent', border: `1px solid ${cardBorder}`,
               color: subtext, fontSize: '12px', fontWeight: '600',
               cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s',
@@ -253,45 +254,44 @@ export default function Analytics({ theme = 'dark' }) {
         </div>
 
         {/* ── KPI Grid ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: kpiCols, gap: '12px', marginBottom: '20px', animation: 'fadeInUp 0.5s ease 0.05s both' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: kpiCols, gap: '24px', marginBottom: '24px' }}>
           {kpis.map((k, i) => (
             <div key={i} className="kpi-card" style={{
               background: isDark ? `linear-gradient(145deg, rgba(255,255,255,0.03), rgba(0,0,0,0.1))` : '#fff',
               border: `1px solid ${cardBorder}`, borderRadius: '16px',
-              padding: isMobile ? '14px' : '16px 18px',
-              boxShadow: isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)',
-              animation: `fadeInUp 0.5s ease ${i * 0.05}s both`,
+              padding: isMobile ? '14px' : '18px 20px',
+              boxShadow: isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                <span style={{ fontSize: '9px', color: subtext, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: '1.4' }}>{k.label}</span>
-                <span style={{ fontSize: '17px', width: '28px', height: '28px', borderRadius: '7px', background: `${k.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{k.icon}</span>
+                <span style={{ fontSize: '12px', color: subtext, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: '1.4' }}>{k.label}</span>
+                <span style={{ fontSize: '17px', width: '28px', height: '28px', borderRadius: '9px', background: `${k.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{k.icon}</span>
               </div>
-              <div style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '800', color: k.color, letterSpacing: '-0.5px', marginBottom: '6px', lineHeight: 1 }}>{k.value}</div>
+              <div style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: '800', color: k.color, letterSpacing: '-0.5px', marginBottom: '6px', lineHeight: 1 }}>{k.value}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '11px', fontWeight: '700', color: k.trend === 'up' ? '#22c55e' : '#ef4444', background: k.trend === 'up' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', padding: '1px 6px', borderRadius: '100px', border: `1px solid ${k.trend === 'up' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
                   {k.trend === 'up' ? '↑' : '↓'} {k.change}
                 </span>
-                <span style={{ fontSize: '10px', color: subtext }}>{k.sub}</span>
+                <span style={{ fontSize: '13px', color: subtext }}>{k.sub}</span>
               </div>
             </div>
           ))}
         </div>
 
         {/* ── Revenue chart + Donut ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: chartRow1, gap: '16px', marginBottom: '16px', animation: 'fadeInUp 0.5s ease 0.1s both' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: chartRow1, gap: '16px', marginBottom: '16px' }}>
 
           {/* Revenue Area Chart */}
-          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '18px', padding: isMobile ? '16px' : '20px', boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)' }}>
+          <div className="an-chart-card" style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '16px', padding: isMobile ? '16px' : '20px', boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
               <div>
-                <h2 style={{ fontSize: '15px', fontWeight: '700', color: text, marginBottom: '2px' }}>Revenue Overview</h2>
-                <p style={{ fontSize: '12px', color: subtext }}>Monthly revenue trend</p>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: text, marginBottom: '2px' }}>Revenue Overview</h2>
+                <p style={{ fontSize: '13px', color: subtext }}>Monthly revenue trend</p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 {[{ c: '#e8b86d', l: 'Revenue' }, { c: '#60a5fa', l: 'Occupancy %' }].map((x, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: x.c }} />
-                    <span style={{ fontSize: '11px', color: subtext }}>{x.l}</span>
+                    <span style={{ fontSize: '13px', color: subtext }}>{x.l}</span>
                   </div>
                 ))}
               </div>
@@ -320,10 +320,10 @@ export default function Analytics({ theme = 'dark' }) {
           </div>
 
           {/* Room Distribution Donut */}
-          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '18px', padding: isMobile ? '16px' : '20px', boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)' }}>
+          <div className="an-chart-card" style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '16px', padding: isMobile ? '16px' : '20px', boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)' }}>
             <div style={{ marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '15px', fontWeight: '700', color: text, marginBottom: '2px' }}>Room Distribution</h2>
-              <p style={{ fontSize: '12px', color: subtext }}>Bookings by room type</p>
+              <h2 style={{ fontSize: '16px', fontWeight: '700', color: text, marginBottom: '2px' }}>Room Distribution</h2>
+              <p style={{ fontSize: '13px', color: subtext }}>Bookings by room type</p>
             </div>
 
             {/* Bigger donut */}
@@ -342,11 +342,11 @@ export default function Analytics({ theme = 'dark' }) {
                 <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '10px', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: r.color, flexShrink: 0, boxShadow: `0 0 6px ${r.color}60` }} />
-                    <span style={{ fontSize: '12px', color: subtext, fontWeight: '500' }}>{r.name}</span>
+                    <span style={{ fontSize: '13.5px', color: subtext, fontWeight: '500' }}>{r.name}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '12px', color: text, fontWeight: '700' }}>{r.value}%</span>
-                    <span style={{ fontSize: '11px', color: subtext }}>{r.bookings} bk</span>
+                    <span style={{ fontSize: '13px', color: subtext }}>{r.bookings} bk</span>
                   </div>
                 </div>
               ))}
@@ -355,26 +355,26 @@ export default function Analytics({ theme = 'dark' }) {
         </div>
 
         {/* ── Weekly + Top Guests ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: chartRow2, gap: '16px', animation: 'fadeInUp 0.5s ease 0.15s both' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: chartRow2, gap: '16px' }}>
 
           {/* Weekly Bar Chart with today highlighted */}
-          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '18px', padding: isMobile ? '16px' : '20px', boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)' }}>
+          <div className="an-chart-card" style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '16px', padding: isMobile ? '16px' : '20px', boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
               <div>
-                <h2 style={{ fontSize: '15px', fontWeight: '700', color: text, marginBottom: '2px' }}>This Week</h2>
-                <p style={{ fontSize: '12px', color: subtext }}>Daily check-ins vs check-outs</p>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: text, marginBottom: '2px' }}>This Week</h2>
+                <p style={{ fontSize: '13px', color: subtext }}>Daily check-ins vs check-outs</p>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                 {[{ c: '#e8b86d', l: 'Check-ins' }, { c: '#60a5fa', l: 'Check-outs' }].map((l, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: l.c }} />
-                    <span style={{ fontSize: '11px', color: subtext }}>{l.l}</span>
+                    <span style={{ fontSize: '13px', color: subtext }}>{l.l}</span>
                   </div>
                 ))}
                 {/* Today indicator */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
-                  <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: '600' }}>Today</span>
+                  <span style={{ fontSize: '13px', color: '#22c55e', fontWeight: '600' }}>Today</span>
                 </div>
               </div>
             </div>
@@ -397,11 +397,11 @@ export default function Analytics({ theme = 'dark' }) {
           </div>
 
           {/* Top Guests */}
-          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '18px', padding: isMobile ? '16px' : '20px', boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)' }}>
+          <div className="an-chart-card" style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: '16px', padding: isMobile ? '16px' : '20px', boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
-                <h2 style={{ fontSize: '15px', fontWeight: '700', color: text, marginBottom: '2px' }}>Top Guests</h2>
-                <p style={{ fontSize: '12px', color: subtext }}>By total spending</p>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: text, marginBottom: '2px' }}>Top Guests</h2>
+                <p style={{ fontSize: '13px', color: subtext }}>By total spending</p>
               </div>
               <span style={{ fontSize: '11px', color: '#e8b86d', fontWeight: '700', cursor: 'pointer', padding: '4px 10px', borderRadius: '100px', background: 'rgba(232,184,109,0.1)', border: '1px solid rgba(232,184,109,0.2)' }}>View all →</span>
             </div>
@@ -411,7 +411,7 @@ export default function Analytics({ theme = 'dark' }) {
                 const [g1, g2] = avatarGradients[i % avatarGradients.length];
                 const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
                 return (
-                  <div key={i} className="guest-row" style={{
+                  <div key={i} className={`guest-row ${isDark ? 'dark' : 'light'}`} style={{
                     display: 'flex', alignItems: 'center', gap: '11px',
                     padding: '10px 12px', borderRadius: '12px',
                     background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
@@ -429,8 +429,8 @@ export default function Analytics({ theme = 'dark' }) {
 
                     {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</div>
-                      <div style={{ fontSize: '11px', color: subtext, marginTop: '1px' }}>{g.visits} visit{g.visits > 1 ? 's' : ''} · {g.room}</div>
+                      <div style={{ fontSize: '15px', fontWeight: '700', color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</div>
+                      <div style={{ fontSize: '13px', color: subtext, marginTop: '1px' }}>{g.visits} visit{g.visits > 1 ? 's' : ''} · {g.room}</div>
                     </div>
 
                     {/* Spend + bar */}
@@ -449,8 +449,8 @@ export default function Analytics({ theme = 'dark' }) {
             {/* Total */}
             <div style={{ marginTop: '12px', padding: '12px 14px', borderRadius: '12px', background: isDark ? 'rgba(232,184,109,0.06)' : 'rgba(232,184,109,0.08)', border: '1px solid rgba(232,184,109,0.18)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: subtext, fontWeight: '500' }}>Total from top guests</span>
-                <span style={{ fontSize: '15px', fontWeight: '800', color: isDark ? '#e8b86d' : '#b45309' }}>₹{totalGuest.toLocaleString()}</span>
+                <span style={{ fontSize: '13.5px', color: subtext, fontWeight: '500' }}>Total from top guests</span>
+                <span style={{ fontSize: '13px', fontWeight: '800', color: isDark ? '#e8b86d' : '#b45309' }}>₹{totalGuest.toLocaleString()}</span>
               </div>
             </div>
           </div>

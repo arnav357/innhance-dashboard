@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import "./Chats.css";
 
 // ── Default fallback data ────────────────────────────────────────
 const DEFAULT_CUSTOMERS = [
@@ -192,10 +195,20 @@ function Avatar({ idx, letter, size = 28, radius = 8 }) {
 }
 
 export default function Chats({ theme = "dark" }) {
+  const container = useRef();
+  
   // ── Backend States ─────────────────────────────────────────────
   const [allCustomers, setAllCustomers] = useState([]);
   const [selected, setSelected] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  useGSAP(() => {
+    if (isLoading) return;
+    const tl = gsap.timeline();
+    tl.from('.chat-header', { y: 30, opacity: 0, duration: 0.8, ease: 'expo.out' })
+      .from('.sidebar-panel', { x: -20, opacity: 0, duration: 0.7, ease: 'expo.out' }, "-=0.5")
+      .from('.chat-panel', { opacity: 0, duration: 0.7, ease: 'expo.out' }, "-=0.5");
+  }, { scope: container, dependencies: [isLoading] });
   const [error, setError] = useState(null);
 
   const [search, setSearch] = useState("");
@@ -310,16 +323,16 @@ export default function Chats({ theme = "dark" }) {
   }, [selected?.id]);
 
   const isDark = theme === "dark";
-  const text = isDark ? "#fff" : "#0f172a";
-  const subtext = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.5)";
-  const cardBg = isDark ? "rgba(255,255,255,0.03)" : "#ffffff";
-  const cardBorder = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.09)";
-  const sidebarBg = isDark ? "rgba(255,255,255,0.02)" : "#f8fafc";
-  const hoverBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
-  const activeBg = isDark ? "rgba(232,184,109,0.08)" : "rgba(232,184,109,0.1)";
-  const msgBg = isDark ? "rgba(255,255,255,0.07)" : "#e2e8f0";
-  const chatAreaBg = isDark ? "rgba(255,255,255,0.01)" : "#f0f4f8";
-  const inputBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
+  const text = isDark ? "#fff" : "#1E1E2F";
+  const subtext = isDark ? "rgba(255,255,255,0.45)" : "#6B6B7A";
+  const cardBg = isDark ? "rgba(255,255,255,0.03)" : "#FDFAF4";
+  const cardBorder = isDark ? "rgba(255,255,255,0.07)" : "rgba(47,62,52,0.13)";
+  const sidebarBg = isDark ? "rgba(255,255,255,0.02)" : "#ECE6D8";
+  const hoverBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(47,62,52,0.06)";
+  const activeBg = isDark ? "rgba(232,184,109,0.08)" : "rgba(184,149,91,0.12)";
+  const msgBg = isDark ? "rgba(255,255,255,0.07)" : "#DDD8CE";
+  const chatAreaBg = isDark ? "rgba(255,255,255,0.01)" : "#EAE4D8";
+  const inputBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(47,62,52,0.06)";
 
   const filtered = allCustomers.filter(
     (c) =>
@@ -462,77 +475,13 @@ export default function Chats({ theme = "dark" }) {
 
   return (
     <div>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
-        @keyframes fadeInUp  { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)} }
-        @keyframes botPulse  { 0%,100%{box-shadow:0 0 0 0 rgba(232,184,109,0.45)}60%{box-shadow:0 0 0 7px rgba(232,184,109,0)} }
-        @keyframes unreadPop { 0%{transform:scale(0.5)}100%{transform:scale(1)} }
-
-        .chats-root { font-family:'DM Sans','Segoe UI',system-ui,sans-serif; }
-
-        .chats-container {
-          display: flex;
-          height: calc(100vh - 190px);
-          min-height: 500px;
-          background: ${cardBg};
-          border: 1px solid ${cardBorder};
-          border-radius: 20px;
-          overflow: hidden;
-          box-shadow: ${isDark ? "none" : "0 2px 20px rgba(0,0,0,0.07)"};
-          animation: fadeInUp 0.5s ease 0.05s both;
-        }
-
-        .sidebar-panel { display:flex; width:300px; min-width:300px; flex-shrink:0; }
-        .chat-panel    { display:flex; flex:1; min-width:0; }
-        .mobile-back   { display:none !important; }
-
-        .search-input { transition:all 0.2s; }
-        .search-input::placeholder { color:${subtext}; }
-        .search-input:focus { outline:none!important; border-color:rgba(232,184,109,0.5)!important; box-shadow:0 0 0 3px rgba(232,184,109,0.08)!important; }
-
-        .conv-item { transition:all 0.15s ease; }
-        .bot-icon  { animation:botPulse 2.8s ease-in-out infinite; }
-        .unread-badge { animation:unreadPop 0.2s ease forwards; }
-
-        .wa-btn:hover        { background:rgba(34,197,94,0.2)!important; border-color:rgba(34,197,94,0.4)!important; }
-        .mark-read-btn:hover { background:rgba(232,184,109,0.12)!important; color:#e8b86d!important; border-color:rgba(232,184,109,0.3)!important; }
-
-        .messages-area::-webkit-scrollbar       { width:4px; }
-        .messages-area::-webkit-scrollbar-track { background:transparent; }
-        .messages-area::-webkit-scrollbar-thumb { background:${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}; border-radius:2px; }
-
-        /* ── Mobile ── */
-        @media (max-width:768px) {
-          .chats-container {
-            height:calc(100vh - 148px)!important;
-            border-radius:14px!important;
-            min-height:400px!important;
-          }
-          .sidebar-panel {
-            width:100%!important;
-            min-width:unset!important;
-            display:${mobileView === "list" ? "flex" : "none"}!important;
-          }
-          .chat-panel {
-            display:${mobileView === "chat" ? "flex" : "none"}!important;
-            width:100%!important;
-          }
-          .mobile-back { display:flex!important; }
-        }
-
-        /* ── Tablet ── */
-        @media (min-width:769px) and (max-width:1024px) {
-          .sidebar-panel { width:260px!important; min-width:260px!important; }
-        }
-      `}</style>
-
-      <div className="chats-root">
+      <div className="chats-root" ref={container}>
         {/* ── Page header ── */}
         <div
+          className="chat-header"
           style={{
             marginBottom: "16px",
-            animation: "fadeInUp 0.5s ease forwards",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
@@ -551,7 +500,7 @@ export default function Chats({ theme = "dark" }) {
             >
               <h1
                 style={{
-                  fontSize: isMobile ? "20px" : "24px",
+                  fontSize: isMobile ? "24px" : "30px",
                   fontWeight: "800",
                   color: text,
                   letterSpacing: "-0.5px",
@@ -576,7 +525,7 @@ export default function Chats({ theme = "dark" }) {
                 </span>
               )}
             </div>
-            <p style={{ color: subtext, fontSize: "13px" }}>
+            <p style={{ color: subtext, fontSize: "14.5px" }}>
               View all WhatsApp conversations · Read-only mode
             </p>
           </div>
@@ -607,7 +556,7 @@ export default function Chats({ theme = "dark" }) {
         </div>
 
         {/* ── Main layout ── */}
-        <div className="chats-container">
+        <div className={`chats-container ${isDark ? 'dark' : 'light'}`} style={{ animation: 'none', background: cardBg, border: `1px solid ${cardBorder}` }}>
           {isLoading ? (
             <div
               style={{
@@ -623,7 +572,7 @@ export default function Chats({ theme = "dark" }) {
           ) : (
             <>
               {/* ── LEFT: Sidebar ── */}
-              <div className="sidebar-panel">
+              <div className={`sidebar-panel ${mobileView === 'chat' ? 'view-chat' : 'view-list'}`}>
                 <div
                   style={{
                     width: "100%",
@@ -660,7 +609,7 @@ export default function Chats({ theme = "dark" }) {
                       </span>
                       <span
                         style={{
-                          fontSize: "11px",
+                          fontSize: "13px",
                           fontWeight: "700",
                           background: isDark
                             ? "rgba(255,255,255,0.08)"
@@ -699,7 +648,7 @@ export default function Chats({ theme = "dark" }) {
                           border: `1px solid ${cardBorder}`,
                           background: inputBg,
                           color: text,
-                          fontSize: "12px",
+                          fontSize: "13.5px",
                           fontFamily: "inherit",
                           boxSizing: "border-box",
                         }}
@@ -728,25 +677,16 @@ export default function Chats({ theme = "dark" }) {
                         return (
                           <div
                             key={c.id}
-                            className="conv-item"
+                            className={`conv-item ${isActive ? 'active' : ''}`}
                             onClick={() => handleSelectCustomer(c)}
                             style={{
+                              '--hover-bg': hoverBg,
                               padding: "13px 14px",
-                              cursor: "pointer",
                               background: isActive ? activeBg : "transparent",
                               borderLeft: isActive
                                 ? "3px solid #e8b86d"
                                 : "3px solid transparent",
                               borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isActive)
-                                e.currentTarget.style.background = hoverBg;
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isActive)
-                                e.currentTarget.style.background =
-                                  "transparent";
                             }}
                           >
                             <div
@@ -814,7 +754,7 @@ export default function Chats({ theme = "dark" }) {
                                   </span>
                                   <span
                                     style={{
-                                      fontSize: "10px",
+                                      fontSize: "12px",
                                       color: subtext,
                                       flexShrink: 0,
                                       marginLeft: "6px",
@@ -825,7 +765,7 @@ export default function Chats({ theme = "dark" }) {
                                 </div>
                                 <div
                                   style={{
-                                    fontSize: "11px",
+                                    fontSize: "13px",
                                     color: subtext,
                                     marginBottom: "5px",
                                   }}
@@ -842,7 +782,7 @@ export default function Chats({ theme = "dark" }) {
                                 >
                                   <span
                                     style={{
-                                      fontSize: "12px",
+                                      fontSize: "13.5px",
                                       color: c.unread > 0 ? text : subtext,
                                       fontWeight: c.unread > 0 ? "500" : "400",
                                       overflow: "hidden",
@@ -890,7 +830,7 @@ export default function Chats({ theme = "dark" }) {
 
               {/* ── RIGHT: Chat window ── */}
               {selected ? (
-                <div className="chat-panel">
+                <div className={`chat-panel ${mobileView === 'list' ? 'view-list' : 'view-chat'}`}>
                   <div
                     style={{
                       flex: 1,
@@ -955,7 +895,7 @@ export default function Chats({ theme = "dark" }) {
                             style={{
                               fontWeight: "700",
                               color: text,
-                              fontSize: "15px",
+                              fontSize: "13px",
                               display: "flex",
                               alignItems: "center",
                               gap: "7px",
@@ -1037,7 +977,7 @@ export default function Chats({ theme = "dark" }) {
 
                     {/* Messages */}
                     <div
-                      className="messages-area"
+                      className={`messages-area ${isDark ? 'dark' : 'light'}`}
                       style={{
                         flex: 1,
                         overflowY: "auto",
