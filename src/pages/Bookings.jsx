@@ -112,7 +112,6 @@ const sourceConfig = {
   },
 };
 
-
 function exportCSV(bookings) {
   const headers = [
     "ID",
@@ -154,45 +153,43 @@ export default function Bookings({ theme = "dark" }) {
   const [bookings, setBookings] = useState([]);
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-async function fetchBookings() {
-  try {
-    const res = await fetch(`${backendUrl}/booking/all`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+  async function fetchBookings() {
+    try {
+      const res = await fetch(`${backendUrl}/booking/all`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    const mapped = data.bookings.map((b) => ({
-      id: b._id,
-      name: b.guestName,
-      phone: b.phone,
-      room: b.roomType,
-      guests: b.numberOfGuests,
-      checkIn: new Date(b.checkIn).toLocaleDateString("en-IN"),
-      checkOut: new Date(b.checkOut).toLocaleDateString("en-IN"),
-      bookingStatus: b.status,
-      paymentStatus: b.paymentStatus,
-      amount: `₹${b.totalAmount}`,
-      source: b.source || "whatsapp",
-      nights: Math.max(
-        1,
-        Math.ceil(
-          (new Date(b.checkOut) - new Date(b.checkIn)) / 86400000
-        )
-      ),
-    }));
+      const mapped = data.bookings.map((b) => ({
+        id: b._id,
+        name: b.guestName,
+        phone: b.phone,
+        room: b.roomType,
+        guests: b.numberOfGuests,
+        checkIn: new Date(b.checkIn).toLocaleDateString("en-IN"),
+        checkOut: new Date(b.checkOut).toLocaleDateString("en-IN"),
+        bookingStatus: b.status,
+        paymentStatus: b.paymentStatus,
+        amount: `₹${b.totalAmount}`,
+        source: b.source || "whatsapp",
+        nights: Math.max(
+          1,
+          Math.ceil((new Date(b.checkOut) - new Date(b.checkIn)) / 86400000),
+        ),
+      }));
 
-    setBookings(mapped);
-  } catch (err) {
-    console.error(err);
+      setBookings(mapped);
+    } catch (err) {
+      console.error(err);
+    }
   }
-}
 
-useEffect(() => {
-  fetchBookings();
-}, []);
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -284,67 +281,58 @@ useEffect(() => {
   }
 
   async function verifyPayment(id) {
-  const res = await fetch(
-    `${backendUrl}/booking/verify-payment/${id}`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`
-      }
-    }
-  );
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.error);
-    return;
-  }
-
-  fetchBookings();
-}
-
-async function completeBooking(id) {
-  const res = await fetch(
-    `${backendUrl}/booking/complete/${id}`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`
-      }
-    }
-  );
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.error);
-    return;
-  }
-
-  fetchBookings();
-}
-
-async function confirmBooking(id) {
-  const res = await fetch(
-    `${backendUrl}/booking/confirm/${id}`,
-    {
+    const res = await fetch(`${backendUrl}/booking/verify-payment/${id}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error);
+      return;
     }
-  );
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.error);
-    return;
+    fetchBookings();
   }
 
-  fetchBookings();
-}
+  async function completeBooking(id) {
+    const res = await fetch(`${backendUrl}/booking/complete/${id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error);
+      return;
+    }
+
+    fetchBookings();
+  }
+
+  async function confirmBooking(id) {
+    const res = await fetch(`${backendUrl}/booking/confirm/${id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error);
+      return;
+    }
+
+    fetchBookings();
+  }
 
   function toggleSort(col) {
     if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -636,22 +624,22 @@ async function confirmBooking(id) {
               </button>
             )}
             {b.paymentStatus === "pending" && (
-                <button
-                  onClick={() => verifyPayment(b.id)}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: "8px",
-                    border: "none",
-                    background: "rgba(239,68,68,0.1)",
-                    color: "#dc2626",
-                    fontSize: "11px",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                  }}
-                >
-                  Payment Done
-                </button>
-              )}
+              <button
+                onClick={() => verifyPayment(b.id)}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "rgba(239,68,68,0.1)",
+                  color: "#dc2626",
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                }}
+              >
+                Payment Done
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1547,7 +1535,8 @@ async function confirmBooking(id) {
                       gap: "6px",
                       padding: "5px 12px",
                       borderRadius: "100px",
-                      background: statusConfig[selectedBooking.bookingStatus]?.bg,
+                      background:
+                        statusConfig[selectedBooking.bookingStatus]?.bg,
                       border: `1px solid ${statusConfig[selectedBooking.bookingStatus]?.border}`,
                       color: statusConfig[selectedBooking.bookingStatus]?.color,
                       fontSize: "12px",
@@ -1559,7 +1548,8 @@ async function confirmBooking(id) {
                         width: "6px",
                         height: "6px",
                         borderRadius: "50%",
-                        background: statusConfig[selectedBooking.bookingStatus]?.dot,
+                        background:
+                          statusConfig[selectedBooking.bookingStatus]?.dot,
                         display: "inline-block",
                       }}
                     />
@@ -1635,9 +1625,7 @@ async function confirmBooking(id) {
                 >
                   {selectedBooking.bookingStatus === "pending" && (
                     <button
-                      onClick={() =>
-                        confirmBooking(selectedBooking.id)
-                      }
+                      onClick={() => confirmBooking(selectedBooking.id)}
                       style={{
                         width: "100%",
                         padding: "10px",
@@ -1656,9 +1644,7 @@ async function confirmBooking(id) {
                   )}
                   {selectedBooking.bookingStatus === "confirmed" && (
                     <button
-                      onClick={() =>
-                        completeBooking(selectedBooking.id)
-                      }
+                      onClick={() => completeBooking(selectedBooking.id)}
                       style={{
                         width: "100%",
                         padding: "10px",
@@ -1815,7 +1801,8 @@ async function confirmBooking(id) {
                       borderRadius: "100px",
                       fontSize: "12px",
                       fontWeight: "700",
-                      background: statusConfig[selectedBooking.bookingStatus]?.bg,
+                      background:
+                        statusConfig[selectedBooking.bookingStatus]?.bg,
                       color: statusConfig[selectedBooking.bookingStatus]?.color,
                       border: `1px solid ${statusConfig[selectedBooking.bookingStatus]?.border}`,
                     }}
@@ -2120,12 +2107,23 @@ async function confirmBooking(id) {
                   <select
                     value={newBooking.room}
                     onChange={(e) =>
-                      setNewBooking((p) => ({ ...p, room: e.target.value }))
+                      setNewBooking({ ...newBooking, room: e.target.value })
                     }
-                    style={{ ...inputStyle, appearance: "none" }}
+                    style={{
+                      ...inputStyle,
+                      color: text,
+                      background: inputBg,
+                    }}
                   >
                     {rooms.map((room) => (
-                      <option key={room._id} value={room.name}>
+                      <option
+                        key={room._id}
+                        value={room.name}
+                        style={{
+                          color: "#111",
+                          backgroundColor: "#fff",
+                        }}
+                      >
                         {room.name} — ₹{room.price}/night
                       </option>
                     ))}

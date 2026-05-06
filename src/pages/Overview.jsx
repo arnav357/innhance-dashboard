@@ -78,18 +78,22 @@ export default function Overview({ theme = 'dark' }) {
   }, []);
 
   // ✅ FETCH BOOKINGS
-  useEffect(() => {
-    fetch(`${backendUrl}/booking/all`)
-      .then(res => res.json())
-      .then(data => {
-        setBookings(data.bookings || []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Error fetching bookings:", err);
-        setLoading(false);
-      });
-  }, []);
+ useEffect(() => {
+  fetch(`${backendUrl}/booking/all`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      setBookings(data.bookings || []);
+      setLoading(false);
+    })
+    .catch((err) => {
+      console.error("Error fetching bookings:", err);
+      setLoading(false);
+    });
+}, [backendUrl]);
 
   // ✅ LOADING (HOOK ERROR FIX — AFTER ALL HOOKS)
   if (loading) {
@@ -99,9 +103,14 @@ export default function Overview({ theme = 'dark' }) {
   // ✅ STATS (DYNAMIC)
   const totalBookings = bookings.length;
 
-  const totalRevenue = bookings.reduce((sum, b) => {
-    return sum + (b.totalAmount || 0);
-  }, 0);
+
+  const totalRevenue = bookings
+  .filter(
+    (b) =>
+      b.paymentStatus === "verified" &&
+      b.status !== "cancelled"
+  )
+  .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
 
   const pending = bookings.filter(b => b.status === "pending").length;
   const confirmed = bookings.filter(b => b.status === "confirmed").length;
@@ -125,13 +134,94 @@ export default function Overview({ theme = 'dark' }) {
       ? formattedBookings
       : formattedBookings.filter(b => b.status === statusFilter);
 
+  const now = new Date();
+  const currentMonth = now.getMonth();
+const currentYear = now.getFullYear();
+
+const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+const lastMonth = lastMonthDate.getMonth();
+const lastMonthYear = lastMonthDate.getFullYear();
+
+const currentMonthRevenue = bookings
+  .filter((b) => {
+    const d = new Date(b.createdAt || b.checkIn);
+    return (
+      b.paymentStatus === "verified" &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear()
+    );
+  })
+  .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
+const lastMonthRevenue = bookings
+  .filter((b) => {
+    const d = new Date(b.createdAt || b.checkIn);
+    return (
+      b.paymentStatus === "verified" &&
+      d.getMonth() === lastMonthDate.getMonth() &&
+      d.getFullYear() === lastMonthDate.getFullYear()
+    );
+  })
+  .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
+const revenueGrowth =
+  lastMonthRevenue === 0
+    ? 100
+    : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+const revenueTrend = revenueGrowth >= 0 ? "up" : "down";
+
+
+// for total bookings growth percentage
+const currentMonthBookings = bookings.filter((b) => {
+  const d = new Date(b.createdAt || b.checkIn);
+  return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+}).length;
+
+const lastMonthBookings = bookings.filter((b) => {
+  const d = new Date(b.createdAt || b.checkIn);
+  return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+}).length;
+
+const bookingsGrowth =
+  lastMonthBookings === 0
+    ? 100
+    : ((currentMonthBookings - lastMonthBookings) / lastMonthBookings) * 100;
+
+const bookingsTrend = bookingsGrowth >= 0 ? "up" : "down";
+
+
+
+//for customers growth percentage
+const currentMonthCustomers = new Set(
+  bookings
+    .filter((b) => {
+      const d = new Date(b.createdAt || b.checkIn);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .map((b) => b.phone)
+).size;
+
+const lastMonthCustomers = new Set(
+  bookings
+    .filter((b) => {
+      const d = new Date(b.createdAt || b.checkIn);
+      return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+    })
+    .map((b) => b.phone)
+).size;
+
+const customersGrowth =
+  lastMonthCustomers === 0
+    ? 100
+    : ((currentMonthCustomers - lastMonthCustomers) / lastMonthCustomers) * 100;
+
+const customersTrend = customersGrowth >= 0 ? "up" : "down";
+
   const stats = [
   {
     label: 'Revenue',
-    value: `₹${totalRevenue}`,
+    value: `₹${totalRevenue.toLocaleString("en-IN")}`,
     icon: '💰',
     color: '#22c55e',
-    change: '+8%',
+    change: `${Math.abs(revenueGrowth).toFixed(0)}%`,
     trend: 'up',
     bg: 'rgba(34,197,94,0.08)',
     border: 'rgba(34,197,94,0.15)',
@@ -143,7 +233,7 @@ export default function Overview({ theme = 'dark' }) {
     value: totalBookings,
     icon: '📊',
     color: '#e8b86d',
-    change: '+12%',
+    change: `${Math.abs(bookingsGrowth).toFixed(0)}%`,
     trend: 'up',
     bg: 'rgba(232,184,109,0.08)',
     border: 'rgba(232,184,109,0.15)',
@@ -155,7 +245,7 @@ export default function Overview({ theme = 'dark' }) {
     value: activeCustomers,
     icon: '👤',
     color: '#60a5fa',
-    change: '+5',
+    change: `${Math.abs(customersGrowth).toFixed(0)}%`,
     trend: 'up',
     bg: 'rgba(96,165,250,0.08)',
     border: 'rgba(96,165,250,0.15)',
