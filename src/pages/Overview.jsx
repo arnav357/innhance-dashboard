@@ -100,6 +100,7 @@ export default function Overview({ theme = "dark" }) {
   // ✅ ALL STATES
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [managerName, setManagerName] = useState("");
 
   useGSAP(
     () => {
@@ -397,7 +398,7 @@ export default function Overview({ theme = "dark" }) {
           <p className="ov-date-str">
             {dateStr} ·{" "}
             <span className="ov-hotel-name">
-              {hotel.name || "Innhance Hotels"}
+              {hotel.managerName || "Manager"}
             </span>
           </p>
         </div>
