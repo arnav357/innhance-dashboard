@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+@keyframes fadeInUp { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)} }
+.an-root { font-family:'DM Sans','Segoe UI',system-ui,sans-serif; }
+.kpi-card { 
+  transition: transform 0.2s ease, box-shadow 0.2s ease; 
+  animation: floatingCard 6s ease-in-out infinite;
+}
+.kpi-card:nth-child(2) { animation-delay: -1.5s; }
+.kpi-card:nth-child(3) { animation-delay: -3s; }
+.kpi-card:nth-child(4) { animation-delay: -4.5s; }
+.kpi-card:hover { transform: translateY(-3px)!important; }
+
+.an-chart-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease; 
+  animation: floatingCard 7s ease-in-out infinite;
+}
+.an-chart-card:nth-child(even) { animation-delay: -3.5s; }
+.an-chart-card:hover { transform: translateY(-3px)!important; }
+.period-btn { transition:all 0.18s ease; cursor:pointer; }
+.export-btn:hover { background:rgba(232,184,109,0.15)!important; color:#e8b86d!important; border-color:rgba(232,184,109,0.4)!important; }
+.guest-row { transition:background 0.15s; }
+.guest-row.dark:hover { background:rgba(255,255,255,0.06)!important; }
+.guest-row.light:hover { background:rgba(0,0,0,0.04)!important; }

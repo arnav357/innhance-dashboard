@@ -17,7 +17,7 @@ function DashboardLayout({ children, theme, toggleTheme }) {
     <div style={{
       display: 'flex',
       minHeight: '100vh',
-      background: isDark ? '#0a0a14' : '#f0f4f8',
+      background: isDark ? '#11141e' : '#CFE1B9',
       fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
       transition: 'background 0.3s ease',
       position: 'relative',
@@ -115,7 +115,7 @@ function DashboardLayout({ children, theme, toggleTheme }) {
         <div className="mobile-header" style={{
           padding: '0 16px',
           height: '56px',
-          background: isDark ? '#0d0d1a' : '#ffffff',
+          background: isDark ? '#0d0d1a' : '#EDE8DC',
           borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`,
           alignItems: 'center',
           justifyContent: 'space-between',

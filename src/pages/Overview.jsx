@@ -1,24 +1,28 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-const activityFeed = [
-  { icon: '✅', text: 'New booking confirmed — Priya Sharma', time: '2 min ago', color: '#22c55e' },
-  { icon: '💰', text: 'Payment received — ₹15,000', time: '18 min ago', color: '#e8b86d' },
-  { icon: '💬', text: 'New message from Rahul Verma', time: '34 min ago', color: '#60a5fa' },
-  { icon: '🛏️', text: 'Suite room marked available', time: '1 hr ago', color: '#a78bfa' },
-];
-
-const quickActions = [
-  { icon: '➕', label: 'Add Booking', color: '#e8b86d', bg: 'rgba(232,184,109,0.1)', border: 'rgba(232,184,109,0.25)', link: '/bookings' },
-  { icon: '🛏️', label: 'Manage Rooms', color: '#60a5fa', bg: 'rgba(96,165,250,0.1)', border: 'rgba(96,165,250,0.25)', link: '/rooms' },
-  { icon: '💬', label: 'View Chats', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)', link: '/chats' },
-  { icon: '📊', label: 'Analytics', color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)', link: '/analytics' },
-];
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import "./Overview.css";
 
 const statusConfig = {
-  confirmed: { bg: 'rgba(34,197,94,0.1)', color: '#16a34a', border: 'rgba(34,197,94,0.25)', icon: '✓' },
-  pending:   { bg: 'rgba(245,158,11,0.1)', color: '#d97706', border: 'rgba(245,158,11,0.25)', icon: '⏳' },
-  cancelled: { bg: 'rgba(239,68,68,0.1)', color: '#dc2626', border: 'rgba(239,68,68,0.25)', icon: '✕' },
+  confirmed: {
+    bg: "rgba(34,197,94,0.1)",
+    color: "#16a34a",
+    border: "rgba(34,197,94,0.25)",
+    icon: "✓",
+  },
+  pending: {
+    bg: "rgba(245,158,11,0.1)",
+    color: "#d97706",
+    border: "rgba(245,158,11,0.25)",
+    icon: "⏳",
+  },
+  cancelled: {
+    bg: "rgba(239,68,68,0.1)",
+    color: "#dc2626",
+    border: "rgba(239,68,68,0.25)",
+    icon: "✕",
+  },
 };
 
 function Sparkline({ data, color }) {
@@ -26,45 +30,118 @@ function Sparkline({ data, color }) {
   const min = Math.min(...data);
   const range = max - min || 1;
 
-  const w = 70, h = 32;
+  const w = 70,
+    h = 32;
 
-  // FIXED: Added backticks around the template literal here
   const pts = data
-    .map((v, i) => 
-      `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4)}`
+    .map(
+      (v, i) =>
+        `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4)}`,
     )
-    .join(' ');
+    .join(" ");
 
   return (
     <svg width={w} height={h}>
-      <polyline
-        points={pts}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-      />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" />
     </svg>
   );
 }
 
-export default function Overview({ theme = 'dark' }) {
+const mockBookings = [
+  {
+    _id: "101",
+    guestName: "Arun Kumar",
+    phone: "+91 98765 43210",
+    roomType: "Deluxe Suite",
+    checkIn: "2023-11-15T14:00:00Z",
+    checkOut: "2023-11-18T11:00:00Z",
+    status: "confirmed",
+    totalAmount: 15000,
+  },
+  {
+    _id: "102",
+    guestName: "Priya Sharma",
+    phone: "+91 87654 32109",
+    roomType: "Standard Room",
+    checkIn: "2023-11-16T14:00:00Z",
+    checkOut: "2023-11-17T11:00:00Z",
+    status: "pending",
+    totalAmount: 4500,
+  },
+  {
+    _id: "103",
+    guestName: "Rahul Verma",
+    phone: "+91 76543 21098",
+    roomType: "Premium Suite",
+    checkIn: "2023-11-20T14:00:00Z",
+    checkOut: "2023-11-25T11:00:00Z",
+    status: "confirmed",
+    totalAmount: 35000,
+  },
+  {
+    _id: "104",
+    guestName: "Neha Gupta",
+    phone: "+91 65432 10987",
+    roomType: "Deluxe Suite",
+    checkIn: "2023-11-10T14:00:00Z",
+    checkOut: "2023-11-12T11:00:00Z",
+    status: "cancelled",
+    totalAmount: 12000,
+  },
+];
 
+export default function Overview({ theme = "dark" }) {
   const navigate = useNavigate();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const container = useRef();
 
-  // ✅ ALL STATES (TOP PE — IMPORTANT FOR HOOK ERROR FIX)
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+  // ✅ ALL STATES
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
 
-  const [hoveredRow, setHoveredRow] = useState(null);
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [hoveredAction, setHoveredAction] = useState(null);
+  useGSAP(
+    () => {
+      if (!loading) {
+        const tl = gsap.timeline();
+        tl.from(".ov-heading-container", {
+          y: 30,
+          opacity: 0,
+          duration: 0.8,
+          ease: "expo.out",
+        })
+          .from(
+            ".stat-card",
+            {
+              y: 20,
+              opacity: 0,
+              duration: 0.7,
+              stagger: 0.1,
+              ease: "expo.out",
+            },
+            "-=0.5",
+          )
+          .from(
+            ".main-grid-item",
+            {
+              y: 20,
+              opacity: 0,
+              duration: 0.7,
+              stagger: 0.15,
+              ease: "expo.out",
+            },
+            "-=0.4",
+          );
+      }
+    },
+    { scope: container, dependencies: [loading] },
+  );
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth <= 1100);
 
-  const hotelData = localStorage.getItem('hotel');
+  const hotelData = localStorage.getItem("hotel");
   const hotel = hotelData ? JSON.parse(hotelData) : {};
 
   // ✅ RESIZE EFFECT
@@ -73,29 +150,54 @@ export default function Overview({ theme = 'dark' }) {
       setIsMobile(window.innerWidth <= 768);
       setIsTablet(window.innerWidth <= 1100);
     }
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   // ✅ FETCH BOOKINGS
- useEffect(() => {
-  fetch(`${backendUrl}/booking/all`, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      setBookings(data.bookings || []);
-      setLoading(false);
+  useEffect(() => {
+    fetch(`${backendUrl}/booking/all`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
     })
-    .catch((err) => {
-      console.error("Error fetching bookings:", err);
-      setLoading(false);
-    });
-}, [backendUrl]);
+      .then((res) => res.json())
+      .then((data) => {
+        setBookings(data.bookings || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching bookings:", err);
+        setLoading(false);
+      });
+  }, [backendUrl]);
 
-  // ✅ LOADING (HOOK ERROR FIX — AFTER ALL HOOKS)
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  const [typedGreeting, setTypedGreeting] = useState("");
+  const [showTutorial, setShowTutorial] = useState(
+    () => !localStorage.getItem("innhance_tutorial_seen"),
+  );
+
+  function dismissTutorial() {
+    localStorage.setItem("innhance_tutorial_seen", "1");
+    setShowTutorial(false);
+  }
+
+  useEffect(() => {
+    let i = 0;
+    setTypedGreeting("");
+    const interval = setInterval(() => {
+      setTypedGreeting(greeting.slice(0, i + 1));
+      i++;
+      if (i >= greeting.length) clearInterval(interval);
+    }, 80);
+    return () => clearInterval(interval);
+  }, [greeting]);
+
+  // ✅ LOADING
   if (loading) {
     return <div style={{ color: "white", padding: "20px" }}>Loading...</div>;
   }
@@ -103,21 +205,16 @@ export default function Overview({ theme = 'dark' }) {
   // ✅ STATS (DYNAMIC)
   const totalBookings = bookings.length;
 
-
   const totalRevenue = bookings
-  .filter(
-    (b) =>
-      b.paymentStatus === "verified" &&
-      b.status !== "cancelled"
-  )
-  .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
+    .filter((b) => b.paymentStatus === "verified" && b.status !== "cancelled")
+    .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
 
-  const pending = bookings.filter(b => b.status === "pending").length;
-  const confirmed = bookings.filter(b => b.status === "confirmed").length;
-  const activeCustomers = new Set(bookings.map(b => b.phone)).size;
+  const pending = bookings.filter((b) => b.status === "pending").length;
+  const confirmed = bookings.filter((b) => b.status === "confirmed").length;
+  const activeCustomers = new Set(bookings.map((b) => b.phone)).size;
 
-  // ✅ FORMAT FOR UI (IMPORTANT)
-  const formattedBookings = bookings.map(b => ({
+  // ✅ FORMAT FOR UI
+  const formattedBookings = bookings.map((b) => ({
     id: b._id,
     name: b.guestName,
     phone: b.phone,
@@ -125,576 +222,414 @@ export default function Overview({ theme = 'dark' }) {
     checkIn: new Date(b.checkIn).toLocaleDateString(),
     checkOut: new Date(b.checkOut).toLocaleDateString(),
     status: b.status,
-    amount: `₹${b.totalAmount}`
+    amount: `₹${b.totalAmount}`,
   }));
 
-  // ✅ FILTER
-  const filtered =
-    statusFilter === 'all'
-      ? formattedBookings
-      : formattedBookings.filter(b => b.status === statusFilter);
+  // ✅ COLORS / THEME
+  const isDark = theme === "dark";
+  const text = isDark ? "#fff" : "#1E1E2F";
+  const subtext = isDark ? "rgba(255,255,255,0.45)" : "#6B6B7A";
+  const cardBg = isDark ? "rgba(255,255,255,0.03)" : "#FDFAF4";
+  const cardBorder = isDark ? "rgba(255,255,255,0.07)" : "rgba(47,62,52,0.13)";
+  const rowHover = isDark ? "rgba(255,255,255,0.03)" : "rgba(47,62,52,0.05)";
+  const tableBorder = isDark ? "rgba(255,255,255,0.05)" : "rgba(47,62,52,0.1)";
+  const tableHeader = isDark ? "rgba(255,255,255,0.3)" : "#6B6B7A";
+  const insightBg = isDark ? "rgba(232,184,109,0.06)" : "rgba(184,149,91,0.1)";
 
   const now = new Date();
   const currentMonth = now.getMonth();
-const currentYear = now.getFullYear();
+  const currentYear = now.getFullYear();
 
-const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
-const lastMonth = lastMonthDate.getMonth();
-const lastMonthYear = lastMonthDate.getFullYear();
+  const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const lastMonth = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
 
-const currentMonthRevenue = bookings
-  .filter((b) => {
-    const d = new Date(b.createdAt || b.checkIn);
-    return (
-      b.paymentStatus === "verified" &&
-      d.getMonth() === now.getMonth() &&
-      d.getFullYear() === now.getFullYear()
-    );
-  })
-  .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
-const lastMonthRevenue = bookings
-  .filter((b) => {
-    const d = new Date(b.createdAt || b.checkIn);
-    return (
-      b.paymentStatus === "verified" &&
-      d.getMonth() === lastMonthDate.getMonth() &&
-      d.getFullYear() === lastMonthDate.getFullYear()
-    );
-  })
-  .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
-const revenueGrowth =
-  lastMonthRevenue === 0
-    ? 100
-    : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
-const revenueTrend = revenueGrowth >= 0 ? "up" : "down";
-
-
-// for total bookings growth percentage
-const currentMonthBookings = bookings.filter((b) => {
-  const d = new Date(b.createdAt || b.checkIn);
-  return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-}).length;
-
-const lastMonthBookings = bookings.filter((b) => {
-  const d = new Date(b.createdAt || b.checkIn);
-  return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
-}).length;
-
-const bookingsGrowth =
-  lastMonthBookings === 0
-    ? 100
-    : ((currentMonthBookings - lastMonthBookings) / lastMonthBookings) * 100;
-
-const bookingsTrend = bookingsGrowth >= 0 ? "up" : "down";
-
-
-
-//for customers growth percentage
-const currentMonthCustomers = new Set(
-  bookings
+  const currentMonthRevenue = bookings
     .filter((b) => {
       const d = new Date(b.createdAt || b.checkIn);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return (
+        b.paymentStatus === "verified" &&
+        d.getMonth() === now.getMonth() &&
+        d.getFullYear() === now.getFullYear()
+      );
     })
-    .map((b) => b.phone)
-).size;
-
-const lastMonthCustomers = new Set(
-  bookings
+    .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
+  const lastMonthRevenue = bookings
     .filter((b) => {
       const d = new Date(b.createdAt || b.checkIn);
-      return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+      return (
+        b.paymentStatus === "verified" &&
+        d.getMonth() === lastMonthDate.getMonth() &&
+        d.getFullYear() === lastMonthDate.getFullYear()
+      );
     })
-    .map((b) => b.phone)
-).size;
+    .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
+  const revenueGrowth =
+    lastMonthRevenue === 0
+      ? 100
+      : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+  const revenueTrend = revenueGrowth >= 0 ? "up" : "down";
 
-const customersGrowth =
-  lastMonthCustomers === 0
-    ? 100
-    : ((currentMonthCustomers - lastMonthCustomers) / lastMonthCustomers) * 100;
+  // for total bookings growth percentage
+  const currentMonthBookings = bookings.filter((b) => {
+    const d = new Date(b.createdAt || b.checkIn);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).length;
 
-const customersTrend = customersGrowth >= 0 ? "up" : "down";
+  const lastMonthBookings = bookings.filter((b) => {
+    const d = new Date(b.createdAt || b.checkIn);
+    return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+  }).length;
+
+  const bookingsGrowth =
+    lastMonthBookings === 0
+      ? 100
+      : ((currentMonthBookings - lastMonthBookings) / lastMonthBookings) * 100;
+
+  const bookingsTrend = bookingsGrowth >= 0 ? "up" : "down";
+
+  //for customers growth percentage
+  const currentMonthCustomers = new Set(
+    bookings
+      .filter((b) => {
+        const d = new Date(b.createdAt || b.checkIn);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .map((b) => b.phone),
+  ).size;
+
+  const lastMonthCustomers = new Set(
+    bookings
+      .filter((b) => {
+        const d = new Date(b.createdAt || b.checkIn);
+        return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+      })
+      .map((b) => b.phone),
+  ).size;
+
+  const customersGrowth =
+    lastMonthCustomers === 0
+      ? 100
+      : ((currentMonthCustomers - lastMonthCustomers) / lastMonthCustomers) *
+        100;
+
+  const customersTrend = customersGrowth >= 0 ? "up" : "down";
 
   const stats = [
-  {
-    label: 'Revenue',
-    value: `₹${totalRevenue.toLocaleString("en-IN")}`,
-    icon: '💰',
-    color: '#22c55e',
-    change: `${Math.abs(revenueGrowth).toFixed(0)}%`,
-    trend: 'up',
-    bg: 'rgba(34,197,94,0.08)',
-    border: 'rgba(34,197,94,0.15)',
-    spark: [40, 55, 48, 62, 58, 72, 80],
-    link: '/bookings',
-  },
-  {
-    label: 'Total Bookings',
-    value: totalBookings,
-    icon: '📊',
-    color: '#e8b86d',
-    change: `${Math.abs(bookingsGrowth).toFixed(0)}%`,
-    trend: 'up',
-    bg: 'rgba(232,184,109,0.08)',
-    border: 'rgba(232,184,109,0.15)',
-    spark: [30, 38, 35, 50, 45, 60, 62],
-    link: '/bookings',
-  },
-  {
-    label: 'Active Customers',
-    value: activeCustomers,
-    icon: '👤',
-    color: '#60a5fa',
-    change: `${Math.abs(customersGrowth).toFixed(0)}%`,
-    trend: 'up',
-    bg: 'rgba(96,165,250,0.08)',
-    border: 'rgba(96,165,250,0.15)',
-    spark: [50, 52, 48, 58, 60, 65, 67],
-    link: '/chats',
-  },
-  {
-    label: 'Pending',
-    value: pending,
-    icon: '⏳',
-    color: '#f59e0b',
-    change: '-2',
-    trend: 'down',
-    bg: 'rgba(245,158,11,0.08)',
-    border: 'rgba(245,158,11,0.15)',
-    spark: [10, 12, 9, 11, 8, 9, 7],
-    link: '/bookings',
-  },
-];
+    {
+      label: "Revenue",
+      value: `₹${totalRevenue}`,
+      icon: "💰",
+      color: isDark ? "#e8b86d" : "#2568b9",
+      change: "+8%",
+      trend: "up",
+      bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
+      border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
+      spark: [40, 55, 48, 62, 58, 72, 80],
+      link: "/bookings",
+    },
+    {
+      label: "Total Bookings",
+      value: totalBookings,
+      icon: "📊",
+      color: isDark ? "#e8b86d" : "#2568b9",
+      change: "+12%",
+      trend: "up",
+      bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
+      border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
+      spark: [30, 38, 35, 50, 45, 60, 62],
+      link: "/bookings",
+    },
+    {
+      label: "Active Customers",
+      value: activeCustomers,
+      icon: "👤",
+      color: isDark ? "#e8b86d" : "#2568b9",
+      change: "+5",
+      trend: "up",
+      bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
+      border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
+      spark: [50, 52, 48, 58, 60, 65, 67],
+      link: "/chats",
+    },
+    {
+      label: "Pending",
+      value: pending,
+      icon: "⏳",
+      color: isDark ? "#e8b86d" : "#2568b9",
+      change: "-2",
+      trend: "down",
+      bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
+      border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
+      spark: [10, 12, 9, 11, 8, 9, 7],
+      link: "/bookings",
+    },
+  ];
 
-
-  // ✅ COLORS / THEME (UNCHANGED)
-  const isDark = theme === 'dark';
-  const text        = isDark ? '#fff' : '#0f172a';
-  const subtext     = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)';
-  const cardBg      = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff';
-  const cardBorder  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.1)';
-  const rowHover    = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
-  const tableBorder = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
-  const tableHeader = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.55)';
-  const insightBg   = isDark ? 'rgba(232,184,109,0.06)' : 'rgba(232,184,109,0.1)';
-
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const dateStr = new Date().toLocaleDateString('en-IN', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
+  const dateStr = new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 
   return (
     <div>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
-
-        @keyframes fadeInUp  { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes pulse     { 0%,100%{opacity:1;box-shadow:0 0 8px rgba(34,197,94,0.6);}50%{opacity:.5;box-shadow:0 0 16px rgba(34,197,94,0.9);} }
-        @keyframes insightGlow {
-          0%,100%{border-left-color:rgba(232,184,109,0.4);}
-          50%{border-left-color:rgba(232,184,109,0.95);box-shadow:-4px 0 20px rgba(232,184,109,0.22);}
-        }
-
-        .ov-root { font-family:'DM Sans','Segoe UI',system-ui,sans-serif; }
-        .ov-heading { font-family:'Playfair Display',serif; }
-
-        .stat-card { transition:transform .22s ease,box-shadow .22s ease; cursor:pointer; }
-        .stat-card:hover { transform:translateY(-5px); }
-
-        .booking-row { transition:background .15s ease; cursor:pointer; }
-        .view-btn { opacity:.5; transition:all .18s ease!important; }
-        .view-btn:hover { opacity:1!important; background:rgba(232,184,109,0.12)!important; border-color:rgba(232,184,109,0.4)!important; color:#e8b86d!important; }
-
-        .quick-btn { transition:all .22s ease!important; }
-        .quick-btn:hover { transform:translateY(-3px)!important; box-shadow:0 10px 28px rgba(0,0,0,0.2)!important; }
-
-        .insight-banner { animation:fadeInUp .5s ease .05s both, insightGlow 3s ease-in-out 1s infinite; }
-
-        /* Mobile booking card */
-        .booking-card {
-          border-radius:12px;
-          padding:14px;
-          margin-bottom:10px;
-          transition:transform .15s ease;
-        }
-        .booking-card:active { transform:scale(0.98); }
-      `}</style>
-
-      <div className="ov-root">
-
+      <div
+        className={`ov-root ${isDark ? "dark" : "light"}`}
+        ref={container}
+        style={{
+          "--text": text,
+          "--subtext": subtext,
+          "--cardBg": cardBg,
+          "--cardBorder": cardBorder,
+          "--rowHover": rowHover,
+          "--tableBorder": tableBorder,
+          "--tableHeader": tableHeader,
+          "--insightBg": insightBg,
+        }}
+      >
         {/* Header */}
-        <div style={{ marginBottom: '18px', animation: 'fadeInUp 0.5s ease forwards' }}>
-          <h1 className="ov-heading" style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: '800', color: text, letterSpacing: '-0.5px', marginBottom: '4px' }}>
-            {greeting}! 👋
+        <div className="ov-heading-container">
+          <h1 className="ov-heading">
+            {typedGreeting}! <span className="waving-hand">👋</span>
           </h1>
-          <p style={{ color: subtext, fontSize: '12px', lineHeight: '1.5' }}>
-            {dateStr} · <span style={{ color: '#e8b86d', fontWeight: '700' }}>{hotel.name || 'Innhance Hotels'}</span>
+          <p className="ov-date-str">
+            {dateStr} ·{" "}
+            <span className="ov-hotel-name">
+              {hotel.name || "Innhance Hotels"}
+            </span>
           </p>
         </div>
 
-        {/* AI Insight */}
-        <div className="insight-banner" style={{
-          background: isDark
-            ? 'linear-gradient(135deg, rgba(232,184,109,0.07), rgba(96,165,250,0.03))'
-            : 'linear-gradient(135deg, rgba(232,184,109,0.12), rgba(96,165,250,0.06))',
-          border: '1px solid rgba(232,184,109,0.2)',
-          borderLeftWidth: '3px', borderLeftColor: 'rgba(232,184,109,0.7)',
-          borderRadius: '14px', padding: isMobile ? '11px 14px' : '13px 18px',
-          marginBottom: '18px',
-          display: 'flex', alignItems: 'center', gap: '12px',
-        }}>
-          <div style={{
-            width: '34px', height: '34px', borderRadius: '9px', flexShrink: 0,
-            background: 'linear-gradient(135deg, #e8b86d, #c9973a)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px',
-            boxShadow: '0 4px 12px rgba(232,184,109,0.3)',
-          }}>🤖</div>
-          <div>
-            <div style={{ fontSize: '10px', color: subtext, marginBottom: '2px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px' }}>AI Insight</div>
-            <div style={{ fontSize: isMobile ? '12px' : '13px', color: text, fontWeight: '500' }}>
-              Bookings up <span style={{ color: '#22c55e', fontWeight: '700' }}>+12%</span> this week · Suite rooms likely to sell out this weekend 🔥
+        {/* Tutorial Banner - shows only once on first login */}
+        {showTutorial && (
+          <div className={`tutorial-banner ${isDark ? "dark" : "light"}`}>
+            <div className="tutorial-banner-top">
+              <div className="tutorial-banner-title">
+                <span className="tutorial-sparkle">✨</span>
+                Welcome to Innhance! Here's a quick guide to get you started.
+              </div>
+              <button
+                className="tutorial-dismiss-btn"
+                onClick={dismissTutorial}
+              >
+                Got it ✓
+              </button>
+            </div>
+            <div className="tutorial-items">
+              <div className="tutorial-item">
+                <span className="tutorial-item-icon">📊</span>
+                <div>
+                  <div className="tutorial-item-title">Overview</div>
+                  <div className="tutorial-item-desc">
+                    Your daily actions, smart alerts & recent bookings at a
+                    glance.
+                  </div>
+                </div>
+              </div>
+              <div className="tutorial-item">
+                <span className="tutorial-item-icon">📅</span>
+                <div>
+                  <div className="tutorial-item-title">Bookings</div>
+                  <div className="tutorial-item-desc">
+                    Add, view, filter and manage all guest reservations.
+                  </div>
+                </div>
+              </div>
+              <div className="tutorial-item">
+                <span className="tutorial-item-icon">🛏️</span>
+                <div>
+                  <div className="tutorial-item-title">Rooms</div>
+                  <div className="tutorial-item-desc">
+                    Manage room types, pricing, availability and inventory.
+                  </div>
+                </div>
+              </div>
+              <div className="tutorial-item">
+                <span className="tutorial-item-icon">💬</span>
+                <div>
+                  <div className="tutorial-item-title">Chats</div>
+                  <div className="tutorial-item-desc">
+                    Talk to guests, respond to inquiries and handle requests.
+                  </div>
+                </div>
+              </div>
+              <div className="tutorial-item">
+                <span className="tutorial-item-icon">📈</span>
+                <div>
+                  <div className="tutorial-item-title">Analytics</div>
+                  <div className="tutorial-item-desc">
+                    Track revenue, occupancy trends and your top guests.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Stats */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : isTablet ? 'repeat(2,1fr)' : 'repeat(4,1fr)',
-          gap: isMobile ? '10px' : '14px',
-          marginBottom: '18px',
-        }}>
+        <div className="stats-grid-container">
           {stats.map((stat, i) => (
-            <div key={i} className="stat-card"
+            <div
+              key={i}
+              className={`stat-card ${isDark ? "dark" : "light"}`}
               onClick={() => navigate(stat.link)}
-              onMouseEnter={() => setHoveredCard(i)}
-              onMouseLeave={() => setHoveredCard(null)}
               style={{
-                background: isDark ? `linear-gradient(145deg, ${stat.bg}, rgba(0,0,0,0.15))` : '#fff',
-                border: `1px solid ${hoveredCard === i ? stat.color + '55' : isDark ? stat.border : 'rgba(0,0,0,0.09)'}`,
-                borderRadius: '14px',
-                padding: isMobile ? '14px' : '18px 20px',
-                boxShadow: hoveredCard === i
-                  ? `0 16px 36px rgba(0,0,0,0.2),0 0 0 1px ${stat.color}25`
-                  : isDark ? '0 4px 16px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.06)',
-                animation: `fadeInUp 0.5s ease ${i * 0.07}s both`,
-              }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                <p style={{ fontSize: '9px', color: subtext, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{stat.label}</p>
-                <span style={{
-                  fontSize: '15px', width: '28px', height: '28px', borderRadius: '7px',
-                  background: `${stat.color}15`, border: `1px solid ${stat.color}20`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>{stat.icon}</span>
+                "--stat-bg": stat.bg,
+                "--stat-border": stat.border,
+                "--stat-color": stat.color,
+                "--stat-icon-bg": `${stat.color}15`,
+                "--stat-icon-border": `${stat.color}20`,
+                "--stat-hover-border": `${stat.color}55`,
+                "--stat-hover-shadow": `${stat.color}25`,
+              }}
+            >
+              <div className="stat-card-header">
+                <p className="stat-card-title">{stat.label}</p>
+                <span className="stat-card-icon">{stat.icon}</span>
               </div>
-              <p style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: '800', color: stat.color, marginBottom: '8px', letterSpacing: '-1px', lineHeight: 1 }}>
-                {stat.value}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <p className="stat-card-value">{stat.value}</p>
+              <div className="stat-card-footer">
                 <div>
-                  <span style={{
-                    fontSize: '11px', fontWeight: '800',
-                    color: stat.trend === 'up' ? '#16a34a' : '#dc2626',
-                    background: stat.trend === 'up' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                    padding: '2px 6px', borderRadius: '100px',
-                    border: `1px solid ${stat.trend === 'up' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-                  }}>
-                    {stat.trend === 'up' ? '↑' : '↓'} {stat.change}
+                  <span
+                    className={`stat-trend ${stat.trend === "up" ? "up" : "down"}`}
+                  >
+                    {stat.trend === "up" ? "↑" : "↓"} {stat.change}
                   </span>
-                  <div style={{ fontSize: '10px', color: subtext, marginTop: '4px' }}>this month</div>
+                  <div className="stat-trend-text">this month</div>
                 </div>
-                {!isMobile && <Sparkline data={stat.spark} color={stat.color} />}
+                {!isMobile && (
+                  <Sparkline data={stat.spark} color={stat.color} />
+                )}
               </div>
             </div>
           ))}
         </div>
 
         {/* Main grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isTablet ? '1fr' : '1fr 320px',
-          gap: '16px',
-          marginBottom: '16px',
-        }}>
-
-          {/* Bookings */}
-          <div style={{
-            background: cardBg, border: `1px solid ${cardBorder}`,
-            borderRadius: '18px', overflow: 'hidden',
-            animation: 'fadeInUp 0.5s ease 0.3s both',
-            boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)',
-          }}>
-            <div style={{
-              padding: isMobile ? '14px' : '16px 20px',
-              borderBottom: `1px solid ${tableBorder}`,
-              display: 'flex', justifyContent: 'space-between',
-              alignItems: 'center', flexWrap: 'wrap', gap: '10px',
-            }}>
-              <div>
-                <h2 style={{ fontSize: '14px', fontWeight: '700', color: text }}>Recent Bookings</h2>
-                <p style={{ fontSize: '11px', color: subtext, marginTop: '2px' }}>Showing {filtered.length} booking{filtered.length !== 1 ? 's' : ''}</p>
+        <div
+          className="main-grid"
+          style={{
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+            gap: "20px",
+          }}
+        >
+          {/* Today's Actions */}
+          <div className={`main-grid-item ${isDark ? "dark" : "light"}`}>
+            <div className="grid-item-header">
+              <h2 className="grid-item-title">Today's Actions</h2>
+            </div>
+            <div className="simple-list">
+              <div className="list-item">
+                <span className="list-item-icon">📈</span>
+                <div className="list-item-content">
+                  <div className="list-item-title">Increase Suite price</div>
+                  <div className="list-item-desc">
+                    High demand detected for this weekend
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {['all', 'confirmed', 'pending', 'cancelled'].map(f => (
-                  <button key={f} onClick={() => setStatusFilter(f)} style={{
-                    padding: '4px 10px', borderRadius: '100px',
-                    border: `1px solid ${statusFilter === f ? 'rgba(232,184,109,0.5)' : cardBorder}`,
-                    background: statusFilter === f ? 'rgba(232,184,109,0.15)' : 'transparent',
-                    color: statusFilter === f ? '#e8b86d' : subtext,
-                    fontSize: '11px', fontWeight: '600', cursor: 'pointer',
-                    transition: 'all 0.18s', textTransform: 'capitalize',
-                  }}>{f}</button>
-                ))}
-                <button onClick={() => navigate('/bookings')} style={{
-                  padding: '4px 10px', borderRadius: '100px',
-                  border: '1px solid rgba(232,184,109,0.3)',
-                  background: 'rgba(232,184,109,0.08)',
-                  color: '#e8b86d', fontSize: '11px', fontWeight: '700', cursor: 'pointer',
-                }}>View all →</button>
+              <div className="list-item">
+                <span className="list-item-icon">📞</span>
+                <div className="list-item-content">
+                  <div className="list-item-title">
+                    Follow up with hot leads
+                  </div>
+                  <div className="list-item-desc">
+                    3 inquiries pending response
+                  </div>
+                </div>
+              </div>
+              <div className="list-item">
+                <span className="list-item-icon">⚠️</span>
+                <div className="list-item-content">
+                  <div className="list-item-title">Weekend occupancy alert</div>
+                  <div className="list-item-desc">
+                    Only 2 standard rooms left
+                  </div>
+                </div>
               </div>
             </div>
-
-            {isMobile ? (
-              <div style={{ padding: '12px' }}>
-                {filtered.map(b => (
-                  <div key={b.id} className="booking-card" style={{
-                    background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                    border: `1px solid ${cardBorder}`,
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                      <div>
-                        <span style={{
-                          fontSize: '10px', fontFamily: 'monospace', fontWeight: '700',
-                          color: subtext, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                          padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginBottom: '4px',
-                        }}>#BK00{b.id}</span>
-                        <div style={{ fontWeight: '700', color: text, fontSize: '14px' }}>{b.name}</div>
-                        <div style={{ fontSize: '11px', color: subtext, marginTop: '2px' }}>{b.phone}</div>
-                      </div>
-                      <span style={{
-                        padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700',
-                        background: statusConfig[b.status]?.bg, color: statusConfig[b.status]?.color,
-                        border: `1px solid ${statusConfig[b.status]?.border}`,
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {statusConfig[b.status]?.icon} {b.status}
-                      </span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-                      {[
-                        { label: 'Room', value: b.room },
-                        { label: 'Check In', value: b.checkIn },
-                        { label: 'Check Out', value: b.checkOut },
-                      ].map(item => (
-                        <div key={item.label}>
-                          <div style={{ fontSize: '10px', color: subtext, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>{item.label}</div>
-                          <div style={{ fontSize: '12px', color: text, fontWeight: '600' }}>{item.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '15px', fontWeight: '800', color: isDark ? '#e8b86d' : '#b45309' }}>{b.amount}</span>
-                      <button onClick={() => navigate('/bookings')} style={{
-                        padding: '6px 14px', borderRadius: '8px',
-                        background: 'rgba(232,184,109,0.1)', border: '1px solid rgba(232,184,109,0.3)',
-                        color: '#e8b86d', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
-                      }}>View →</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: `1px solid ${tableBorder}`, background: isDark ? 'transparent' : 'rgba(0,0,0,0.02)' }}>
-                      {['#ID', 'Guest', 'Room', 'Check In', 'Check Out', 'Amount', 'Status', 'Actions'].map(h => (
-                        <th key={h} style={{
-                          textAlign: 'left', padding: '10px 16px',
-                          fontSize: '10px', color: tableHeader,
-                          textTransform: 'uppercase', letterSpacing: '0.5px',
-                          fontWeight: '700', whiteSpace: 'nowrap',
-                        }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(b => (
-                      <tr key={b.id} className="booking-row"
-                        onMouseEnter={() => setHoveredRow(b.id)}
-                        onMouseLeave={() => setHoveredRow(null)}
-                        style={{ borderBottom: `1px solid ${tableBorder}`, background: hoveredRow === b.id ? rowHover : 'transparent' }}>
-                        <td style={{ padding: '12px 16px' }}>
-                          <span style={{
-                            fontSize: '11px', fontWeight: '700', color: subtext,
-                            background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                            padding: '2px 7px', borderRadius: '5px', fontFamily: 'monospace',
-                          }}>#BK00{b.id}</span>
-                        </td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ fontWeight: '700', color: text, fontSize: '13px' }}>{b.name}</div>
-                          <div style={{ fontSize: '11px', color: subtext, marginTop: '2px' }}>{b.phone}</div>
-                        </td>
-                        <td style={{ padding: '12px 16px', color: subtext, fontSize: '13px', fontWeight: '500' }}>{b.room}</td>
-                        <td style={{ padding: '12px 16px', color: subtext, fontSize: '13px', whiteSpace: 'nowrap' }}>{b.checkIn}</td>
-                        <td style={{ padding: '12px 16px', color: subtext, fontSize: '13px', whiteSpace: 'nowrap' }}>{b.checkOut}</td>
-                        <td style={{ padding: '12px 16px', fontWeight: '700', color: isDark ? '#e8b86d' : '#b45309', fontSize: '13px' }}>{b.amount}</td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <span style={{
-                            padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700',
-                            background: statusConfig[b.status]?.bg, color: statusConfig[b.status]?.color,
-                            border: `1px solid ${statusConfig[b.status]?.border}`,
-                            display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap',
-                          }}>
-                            {statusConfig[b.status]?.icon} {b.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', gap: '5px' }}>
-                            <button onClick={() => navigate('/bookings')} className="view-btn" style={{
-                              padding: '4px 12px', borderRadius: '6px',
-                              background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                              border: `1px solid ${cardBorder}`, color: subtext,
-                              fontSize: '11px', cursor: 'pointer', fontWeight: '600',
-                            }}>View</button>
-                            {b.status === 'pending' && (
-                              <button style={{
-                                padding: '4px 10px', borderRadius: '6px',
-                                background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)',
-                                color: '#16a34a', fontSize: '11px', cursor: 'pointer', fontWeight: '700',
-                              }}>✓</button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
 
-          {/* Live Activity */}
-          {!isMobile && (
-            <div style={{
-              background: cardBg, border: `1px solid ${cardBorder}`,
-              borderRadius: '18px', overflow: 'hidden',
-              animation: 'fadeInUp 0.5s ease 0.35s both',
-              display: 'flex', flexDirection: 'column',
-              boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)',
-            }}>
-              <div style={{
-                padding: '16px 18px', borderBottom: `1px solid ${tableBorder}`,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <h2 style={{ fontSize: '14px', fontWeight: '700', color: text }}>Live Activity</h2>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s ease-in-out infinite' }} />
+          {/* Smart Alerts */}
+          <div className={`main-grid-item ${isDark ? "dark" : "light"}`}>
+            <div className="grid-item-header">
+              <h2 className="grid-item-title">Smart Alerts</h2>
+            </div>
+            <div className="simple-list">
+              <div className="list-item">
+                <span className="list-item-icon">😴</span>
+                <div className="list-item-content">
+                  <div className="list-item-title">
+                    High intent lead inactive
+                  </div>
+                  <div className="list-item-desc">
+                    Guest looking at Deluxe Suite left chat
+                  </div>
+                </div>
               </div>
-              <div style={{ padding: '8px', flex: 1 }}>
-                {activityFeed.map((a, i) => (
-                  <div key={i} style={{
-                    display: 'flex', gap: '10px', alignItems: 'flex-start',
-                    padding: '11px 10px', borderRadius: '10px',
-                    borderBottom: i < activityFeed.length - 1 ? `1px solid ${tableBorder}` : 'none',
-                  }}>
-                    <div style={{
-                      width: '32px', height: '32px', borderRadius: '8px', flexShrink: 0,
-                      background: `${a.color}18`, border: `1px solid ${a.color}30`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px',
-                    }}>{a.icon}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '12px', color: text, lineHeight: '1.4', marginBottom: '2px', fontWeight: '500' }}>{a.text}</div>
-                      <div style={{ fontSize: '11px', color: subtext }}>{a.time}</div>
+              <div className="list-item">
+                <span className="list-item-icon">💳</span>
+                <div className="list-item-content">
+                  <div className="list-item-title">Payment pending</div>
+                  <div className="list-item-desc">
+                    Booking #BK00102 waiting for payment
+                  </div>
+                </div>
+              </div>
+              <div className="list-item">
+                <span className="list-item-icon">📉</span>
+                <div className="list-item-content">
+                  <div className="list-item-title">Drop-off after pricing</div>
+                  <div className="list-item-desc">
+                    3 guests dropped off after seeing suite price
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Bookings (Simplified) */}
+          <div className={`main-grid-item ${isDark ? "dark" : "light"}`}>
+            <div className="grid-item-header">
+              <h2 className="grid-item-title">Recent Bookings</h2>
+              <button
+                onClick={() => navigate("/bookings")}
+                className="view-all-btn"
+              >
+                View all →
+              </button>
+            </div>
+            <div className="simple-list">
+              {formattedBookings.slice(0, 3).map((b) => (
+                <div key={b.id} className="list-item booking-simple">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <div className="booking-simple-avatar">
+                      {b.name.charAt(0)}
+                    </div>
+                    <div className="list-item-content">
+                      <div className="list-item-title">{b.name}</div>
+                      <div className="list-item-desc">{b.room}</div>
                     </div>
                   </div>
-                ))}
-              </div>
-              <div style={{ margin: '8px', borderRadius: '12px', padding: '14px', background: insightBg, border: '1px solid rgba(232,184,109,0.2)' }}>
-                <div style={{ fontSize: '10px', color: subtext, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Today's Insights</div>
-                {[
-                  { label: 'Peak Booking Time', value: '6 PM - 9 PM' },
-                  { label: 'Most Booked Room', value: 'Deluxe' },
-                  { label: "Today's Revenue", value: '₹23,000' },
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: i < 2 ? '8px' : '0', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', color: subtext, fontWeight: '500' }}>{item.label}</span>
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: isDark ? '#e8b86d' : '#b45309', background: 'rgba(232,184,109,0.1)', padding: '2px 8px', borderRadius: '5px' }}>{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* On mobile: Live activity */}
-        {isMobile && (
-          <div style={{
-            background: cardBg, border: `1px solid ${cardBorder}`,
-            borderRadius: '16px', padding: '14px',
-            marginBottom: '16px',
-            animation: 'fadeInUp 0.5s ease 0.35s both',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '14px', fontWeight: '700', color: text }}>Live Activity</h2>
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s ease-in-out infinite' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {activityFeed.slice(0, 3).map((a, i) => (
-                <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <div style={{
-                    width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0,
-                    background: `${a.color}18`, border: `1px solid ${a.color}30`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px',
-                  }}>{a.icon}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '12px', color: text, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.text}</div>
-                    <div style={{ fontSize: '10px', color: subtext }}>{a.time}</div>
+                  <div
+                    className={`booking-simple-amount ${isDark ? "dark" : "light"}`}
+                  >
+                    {b.amount}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        )}
-
-        {/* Quick Actions */}
-        <div style={{
-          background: cardBg, border: `1px solid ${cardBorder}`,
-          borderRadius: '18px', padding: isMobile ? '14px' : '18px 20px',
-          animation: 'fadeInUp 0.5s ease 0.4s both',
-          boxShadow: isDark ? 'none' : '0 2px 16px rgba(0,0,0,0.06)',
-        }}>
-          <h2 style={{ fontSize: '14px', fontWeight: '700', color: text, marginBottom: '12px' }}>Quick Actions</h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(auto-fit, minmax(140px,1fr))',
-            gap: '10px',
-          }}>
-            {quickActions.map((a, i) => (
-              <button key={i} className="quick-btn"
-                onClick={() => navigate(a.link)}
-                onMouseEnter={() => setHoveredAction(i)}
-                onMouseLeave={() => setHoveredAction(null)}
-                style={{
-                  padding: isMobile ? '12px' : '14px 16px',
-                  borderRadius: '12px',
-                  background: hoveredAction === i ? a.bg.replace('0.1', '0.18') : a.bg,
-                  border: `1px solid ${hoveredAction === i ? a.color + '60' : a.border}`,
-                  color: a.color, fontSize: '13px', fontWeight: '700',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center',
-                  gap: '8px', justifyContent: 'center',
-                  boxShadow: hoveredAction === i ? `0 8px 20px ${a.color}25` : 'none',
-                }}>
-                <span style={{ fontSize: '16px' }}>{a.icon}</span>
-                {a.label}
-              </button>
-            ))}
-          </div>
         </div>
-
       </div>
     </div>
   );

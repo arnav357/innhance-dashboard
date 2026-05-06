@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import {
   LayoutDashboard, CalendarDays, BedDouble,
   MessageCircle, BarChart3, LogOut,
@@ -32,6 +34,10 @@ const navGroups = [
 
 export default function Sidebar({ theme, toggleTheme, onClose }) {
   const navigate = useNavigate();
+  const container = useRef();
+  
+
+
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [hoveredLink, setHoveredLink] = useState(null);
@@ -82,12 +88,12 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
 
   const bg = isDark
     ? 'linear-gradient(180deg, #0d0d1a 0%, #080812 100%)'
-    : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)';
-  const border = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.1)';
-  const text = isDark ? '#fff' : '#1a1a2e';
-  const subtext = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.45)';
-  const linkColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)';
-  const linkHoverBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+    : 'linear-gradient(180deg, #2F3E34 0%, #1F2A24 100%)';
+  const border = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)';
+  const text = isDark ? '#fff' : '#CFE1B9';
+  const subtext = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(245,241,232,0.55)';
+  const linkColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.88)';
+  const linkHoverBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)';
 
   function handleLogout() {
     localStorage.removeItem('token');
@@ -100,7 +106,7 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
   }
 
   return (
-    <div style={{
+    <div ref={container} style={{
       width: isCollapsed ? '68px' : '240px',
       minWidth: isCollapsed ? '68px' : '240px',
       background: bg,
@@ -112,7 +118,7 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
       overflow: 'hidden',
       boxShadow: isMobile
         ? '4px 0 32px rgba(0,0,0,0.5)'
-        : isDark ? 'none' : '2px 0 12px rgba(0,0,0,0.06)',
+        : isDark ? 'none' : '4px 0 24px rgba(31,42,36,0.25)',
     }}>
 
       {/* Logo + collapse/close */}
@@ -123,7 +129,7 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
         justifyContent: isCollapsed ? 'center' : 'space-between', gap: '8px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-          <div style={{
+          <div className="sidebar-logo" style={{
             width: '34px', height: '34px', borderRadius: '9px',
             overflow: 'hidden', flexShrink: 0,
             boxShadow: '0 4px 12px rgba(232,184,109,0.25)',
@@ -143,25 +149,25 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
                 letterSpacing: '-0.3px', whiteSpace: 'nowrap',
                 fontFamily: "'Playfair Display', serif",
               }}>Innhance</div>
-              <div style={{ fontSize: '10px', color: subtext, marginTop: '1px' }}>Hotel Dashboard</div>
+              <div style={{ fontSize: '12px', color: subtext, marginTop: '1px' }}>Hotel Dashboard</div>
             </div>
           )}
         </div>
 
         {isMobile ? (
           <button onClick={onClose} style={{
-            background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+            background: 'rgba(255,255,255,0.1)',
             border: `1px solid ${border}`, borderRadius: '8px',
-            color: subtext, cursor: 'pointer',
+            color: text, cursor: 'pointer',
             width: '28px', height: '28px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '14px', fontWeight: '700', flexShrink: 0,
           }}>✕</button>
         ) : (
           <button onClick={() => setCollapsed(c => !c)} style={{
-            background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+            background: 'rgba(255,255,255,0.1)',
             border: `1px solid ${border}`, borderRadius: '8px',
-            color: subtext, cursor: 'pointer',
+            color: text, cursor: 'pointer',
             padding: '5px', display: 'flex', alignItems: 'center',
             justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s',
             marginTop: isCollapsed ? '8px' : '0',
@@ -174,10 +180,10 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
       {/* Hotel info */}
       {!isCollapsed && (
         <div style={{ padding: '13px 16px', borderBottom: `1px solid ${border}` }}>
-          <div style={{ fontSize: '10px', color: subtext, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px', fontWeight: '600' }}>
+          <div style={{ fontSize: '12px', color: subtext, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px', fontWeight: '600' }}>
             Logged in as
           </div>
-          <div style={{ fontSize: '13px', fontWeight: '700', color: '#e8b86d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: '#e8b86d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {hotel.name || 'Hotel Name'}
           </div>
           <div style={{
@@ -197,7 +203,7 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
           <div key={gi} style={{ marginBottom: '6px' }}>
             {!isCollapsed && (
               <div style={{
-                fontSize: '10px', color: subtext, textTransform: 'uppercase',
+                fontSize: '11px', color: isDark ? subtext : 'rgba(255,255,255,0.5)', textTransform: 'uppercase',
                 letterSpacing: '1.2px', padding: '8px 10px 4px', fontWeight: '700',
               }}>{group.label}</div>
             )}
@@ -205,6 +211,7 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
               const Icon = link.icon;
               return (
                 <NavLink
+                  className="sidebar-link"
                   key={link.to} to={link.to} end={link.to === '/'}
                   onClick={handleNavClick}
                   onMouseEnter={() => setHoveredLink(link.to)}
@@ -215,19 +222,19 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
                     justifyContent: isCollapsed ? 'center' : 'flex-start',
                     padding: isCollapsed ? '11px 0' : '11px 13px',
                     borderRadius: '10px', textDecoration: 'none', marginBottom: '2px',
-                    fontSize: '13.5px', fontWeight: isActive ? '700' : '500',
+                    fontSize: '15px', fontWeight: isActive ? '700' : '500',
                     background: isActive
                       ? isDark
                         ? 'linear-gradient(135deg, rgba(232,184,109,0.14), rgba(232,184,109,0.05))'
-                        : 'linear-gradient(135deg, rgba(232,184,109,0.18), rgba(232,184,109,0.07))'
+                        : 'linear-gradient(135deg, rgba(232,184,109,0.22), rgba(232,184,109,0.1))'
                       : hoveredLink === link.to ? linkHoverBg : 'transparent',
-                    color: isActive ? '#e8b86d' : hoveredLink === link.to ? text : linkColor,
+                    color: isActive ? '#e8b86d' : hoveredLink === link.to ? '#fff' : linkColor,
                     borderLeft: !isCollapsed && isActive ? '2.5px solid #e8b86d' : !isCollapsed ? '2.5px solid transparent' : 'none',
                     transition: 'all 0.18s ease',
                     transform: hoveredLink === link.to && !isActive ? 'translateX(2px)' : 'none',
                   })}
                 >
-                  <Icon size={17} strokeWidth={2} style={{ flexShrink: 0 }} />
+                  <Icon size={19} strokeWidth={2} style={{ flexShrink: 0 }} />
                   {!isCollapsed && <span>{link.label}</span>}
                 </NavLink>
               );
@@ -241,9 +248,9 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
         <div style={{ padding: '0 10px 16px' }}>
           <button onClick={toggleTheme} style={{
             width: '100%', padding: '10px 13px', borderRadius: '10px',
-            background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+            background: 'rgba(255,255,255,0.07)',
             border: `1px solid ${border}`,
-            color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+            color: text,
             fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px',
           }}>
@@ -264,21 +271,6 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
             </div>
           </button>
 
-          <div style={{
-            padding: '12px 13px', borderRadius: '12px', marginBottom: '8px',
-            background: isDark
-              ? 'linear-gradient(135deg, rgba(232,184,109,0.08), rgba(201,151,58,0.04))'
-              : 'linear-gradient(135deg, rgba(232,184,109,0.15), rgba(201,151,58,0.08))',
-            border: '1px solid rgba(232,184,109,0.2)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <span style={{ fontSize: '10px', color: subtext, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Plan</span>
-              <span style={{ fontSize: '10px', fontWeight: '700', color: '#e8b86d', background: 'rgba(232,184,109,0.15)', padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(232,184,109,0.25)' }}>PRO ✨</span>
-            </div>
-            <div style={{ fontSize: '11px', color: subtext, fontWeight: '500' }}>
-              Expires: {hotel.subscriptionExpiry || 'Jun 20, 2026'}
-            </div>
-          </div>
 
           <button onClick={handleLogout}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.12)'; e.currentTarget.style.color = '#fca5a5'; }}
@@ -286,7 +278,7 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
             style={{
               width: '100%', padding: '10px', borderRadius: '10px',
               background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
-              color: isDark ? 'rgba(252,165,165,0.7)' : 'rgba(220,38,38,0.7)',
+              color: isDark ? 'rgba(252,165,165,0.8)' : 'rgba(252,200,200,0.9)',
               fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
             }}>
@@ -297,8 +289,8 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
         <div style={{ padding: '0 8px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           <button onClick={toggleTheme} style={{
             width: '44px', height: '44px', borderRadius: '10px',
-            background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-            border: `1px solid ${border}`, color: subtext,
+            background: 'rgba(255,255,255,0.1)',
+            border: `1px solid ${border}`, color: text,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {isDark ? <Moon size={16} /> : <Sun size={16} />}
@@ -306,7 +298,7 @@ export default function Sidebar({ theme, toggleTheme, onClose }) {
           <button onClick={handleLogout} style={{
             width: '44px', height: '44px', borderRadius: '10px',
             background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
-            color: isDark ? 'rgba(252,165,165,0.7)' : 'rgba(220,38,38,0.7)',
+            color: isDark ? 'rgba(252,165,165,0.7)' : 'rgba(252,200,200,0.9)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <LogOut size={16} />
