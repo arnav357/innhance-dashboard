@@ -142,7 +142,8 @@ export default function Overview({ theme = "dark" }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth <= 1100);
 
-  const hotelData = localStorage.getItem("hotel");
+
+  const hotelData = localStorage.getItem("user");
   const hotel = hotelData ? JSON.parse(hotelData) : {};
 
   // ✅ RESIZE EFFECT
@@ -398,7 +399,7 @@ export default function Overview({ theme = "dark" }) {
           <p className="ov-date-str">
             {dateStr} ·{" "}
             <span className="ov-hotel-name">
-              {hotel.managerName || "Manager"}
+              {hotel.managername || "Manager"}
             </span>
           </p>
         </div>
