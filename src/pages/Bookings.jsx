@@ -154,17 +154,39 @@ function exportCSV(bookings) {
 
 export default function Bookings({ theme = "dark" }) {
   const container = useRef();
-  
+
   const [bookings, setBookings] = useState([]);
-  
-  useGSAP(() => {
-    if (bookings.length === 0) return;
-    const tl = gsap.timeline();
-    tl.fromTo('.bk-header', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'expo.out' })
-      .fromTo('.bk-stat-card', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: 'expo.out' }, "-=0.5")
-      .fromTo('.bk-toolbar', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'expo.out' }, "-=0.4")
-      .fromTo('.booking-row, .booking-card', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.05, ease: 'expo.out' }, "-=0.3");
-  }, { scope: container, dependencies: [bookings] });
+
+  useGSAP(
+    () => {
+      if (bookings.length === 0) return;
+      const tl = gsap.timeline();
+      tl.fromTo(
+        ".bk-header",
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "expo.out" },
+      )
+        .fromTo(
+          ".bk-stat-card",
+          { y: 20, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: "expo.out" },
+          "-=0.5",
+        )
+        .fromTo(
+          ".bk-toolbar",
+          { y: 20, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.5, ease: "expo.out" },
+          "-=0.4",
+        )
+        .fromTo(
+          ".booking-row, .booking-card",
+          { opacity: 0, y: 15 },
+          { opacity: 1, y: 0, duration: 0.5, stagger: 0.05, ease: "expo.out" },
+          "-=0.3",
+        );
+    },
+    { scope: container, dependencies: [bookings] },
+  );
 
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -219,11 +241,13 @@ export default function Bookings({ theme = "dark" }) {
   const [newBooking, setNewBooking] = useState({
     name: "",
     phone: "",
-    room: "Standard",
+    room: "",
+    plan: "",
     guests: 1,
+    numberOfRooms: 1,
     checkIn: "",
     checkOut: "",
-    source: "whatsapp",
+    source: "direct",
   });
 
   useEffect(() => {
@@ -379,7 +403,7 @@ export default function Bookings({ theme = "dark" }) {
 
       const nights = Math.max(1, Math.ceil((outDate - inDate) / 86400000));
 
-      const totalAmount = selectedRoom.price * nights;
+      const totalAmount = pricePerNight * nights;
       const res = await fetch(`${backendUrl}/booking/create`, {
         method: "POST",
         headers: {
@@ -392,7 +416,9 @@ export default function Bookings({ theme = "dark" }) {
           checkIn: newBooking.checkIn,
           checkOut: newBooking.checkOut,
           roomType: newBooking.room,
+          planName: newBooking.plan,
           numberOfGuests: newBooking.guests,
+          numberOfRooms: newBooking.numberOfRooms,
           totalAmount: totalAmount,
         }),
       });
@@ -635,10 +661,13 @@ export default function Bookings({ theme = "dark" }) {
                   cursor: "pointer",
                 }}
               >
-                ✓ Done
+                ✓ Check-out
               </button>
             )}
-            {b.paymentStatus === "pending" && (
+
+            {["pending", "expired", "failed", "settled"].includes(
+              b.paymentStatus,
+            ) && (
               <button
                 onClick={() => verifyPayment(b.id)}
                 style={{
@@ -683,6 +712,30 @@ export default function Bookings({ theme = "dark" }) {
     boxSizing: "border-box",
     colorScheme: isDark ? "dark" : "light",
   };
+
+  const selectedRoom = rooms.find((r) => r.name === newBooking.room);
+
+  const selectedPlan = selectedRoom?.plans?.find(
+    (p) => p.name === newBooking.plan,
+  );
+
+  const nights =
+    newBooking.checkIn && newBooking.checkOut
+      ? Math.max(
+          1,
+          Math.ceil(
+            (new Date(newBooking.checkOut) - new Date(newBooking.checkIn)) /
+              86400000,
+          ),
+        )
+      : 1;
+
+  const pricePerNight = selectedPlan?.price || selectedRoom?.price || 0;
+
+  const estimatedTotal =
+  pricePerNight *
+  nights *
+  newBooking.numberOfRooms;
 
   return (
     <div>
@@ -781,7 +834,9 @@ export default function Bookings({ theme = "dark" }) {
               color: isDark ? "#e8b86d" : "#2568b9",
               icon: "📋",
               bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
-              border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
+              border: isDark
+                ? "rgba(232,184,109,0.15)"
+                : "rgba(37,104,185,0.15)",
             },
             {
               label: "Confirmed",
@@ -789,7 +844,9 @@ export default function Bookings({ theme = "dark" }) {
               color: isDark ? "#e8b86d" : "#2568b9",
               icon: "✅",
               bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
-              border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
+              border: isDark
+                ? "rgba(232,184,109,0.15)"
+                : "rgba(37,104,185,0.15)",
             },
             {
               label: "Pending",
@@ -797,7 +854,9 @@ export default function Bookings({ theme = "dark" }) {
               color: isDark ? "#e8b86d" : "#2568b9",
               icon: "⏳",
               bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
-              border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
+              border: isDark
+                ? "rgba(232,184,109,0.15)"
+                : "rgba(37,104,185,0.15)",
             },
             {
               label: "Total Revenue",
@@ -805,7 +864,9 @@ export default function Bookings({ theme = "dark" }) {
               color: isDark ? "#e8b86d" : "#2568b9",
               icon: "💰",
               bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
-              border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
+              border: isDark
+                ? "rgba(232,184,109,0.15)"
+                : "rgba(37,104,185,0.15)",
             },
           ].map((s, i) => (
             <div
@@ -1124,7 +1185,7 @@ export default function Bookings({ theme = "dark" }) {
                         return (
                           <tr
                             key={b.id}
-                            className={`booking-row ${isDark ? 'dark' : 'light'}`}
+                            className={`booking-row ${isDark ? "dark" : "light"}`}
                             onMouseEnter={() => setHoveredRow(b.id)}
                             onMouseLeave={() => setHoveredRow(null)}
                             onClick={() =>
@@ -1365,10 +1426,12 @@ export default function Bookings({ theme = "dark" }) {
                                       fontFamily: "inherit",
                                     }}
                                   >
-                                    ✓ Done
+                                    ✓ Check-out
                                   </button>
                                 )}
-                                {b.paymentStatus === "pending" &&
+                                {["pending", "expired"].includes(
+                                  b.paymentStatus,
+                                ) &&
                                   b.bookingStatus === "confirmed" && (
                                     <button
                                       className="action-btn"
@@ -1376,9 +1439,10 @@ export default function Bookings({ theme = "dark" }) {
                                       style={{
                                         padding: "5px 8px",
                                         borderRadius: "7px",
-                                        background: "rgba(239,68,68,0.08)",
-                                        border: "1px solid rgba(239,68,68,0.2)",
-                                        color: "#dc2626",
+                                        background: "rgba(59,130,246,0.10)",
+                                        border:
+                                          "1px solid rgba(59,130,246,0.25)",
+                                        color: "#60a5fa",
                                         fontSize: "11px",
                                         fontWeight: "700",
                                         fontFamily: "inherit",
@@ -2093,44 +2157,123 @@ export default function Bookings({ theme = "dark" }) {
                 {/* Room type */}
                 <div>
                   <label style={labelStyle}>Room Type</label>
+
                   <select
                     value={newBooking.room}
-                    onChange={(e) =>
-                      setNewBooking({ ...newBooking, room: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const room = rooms.find((r) => r.name === e.target.value);
+
+                      setNewBooking((p) => ({
+                        ...p,
+                        room: e.target.value,
+                        plan: room?.plans?.[0]?.name || "",
+                      }));
+                    }}
                     style={{
                       ...inputStyle,
-                      color: text,
-                      background: inputBg,
+                      backgroundColor: isDark ? "#1a1a2e" : "#ffffff",
                     }}
                   >
+                    <option value="">Select Room</option>
+
                     {rooms.map((room) => (
-                      <option
-                        key={room._id}
-                        value={room.name}
-                        style={{
-                          color: "#111",
-                          backgroundColor: "#fff",
-                        }}
-                      >
-                        {room.name} — ₹{room.price}/night
+                      <option key={room._id} value={room.name}>
+                        {room.name}
+                        {" • "}
+                        {room.availableRooms || 0} rooms
+                        {" • "}
+                        {room.maximumGuests || 0} guests
                       </option>
                     ))}
                   </select>
                 </div>
 
+                {selectedRoom?.plans?.length > 0 && (
+                  <div>
+                    <label style={labelStyle}>Meal Plan</label>
+
+                    <select
+                      value={newBooking.plan}
+                      onChange={(e) =>
+                        setNewBooking((p) => ({
+                          ...p,
+                          plan: e.target.value,
+                        }))
+                      }
+                      style={{
+                        ...inputStyle,
+                        backgroundColor: isDark ? "#1a1a2e" : "#ffffff",
+                      }}
+                    >
+                      {selectedRoom.plans.map((plan) => (
+                        <option key={plan.name} value={plan.name}>
+                          {plan.name} — ₹{plan.price}/night
+                        </option>
+                      ))}
+                    </select>
+
+                    {selectedPlan?.description && (
+                      <div
+                        style={{
+                          marginTop: "8px",
+                          fontSize: "12px",
+                          color: subtext,
+                          lineHeight: "1.5",
+                        }}
+                      >
+                        {selectedPlan.description}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Guests */}
                 {/* Guests */}
                 <div>
                   <label style={labelStyle}>Number of Guests</label>
+
                   <input
                     type="number"
                     min="1"
-                    max="10"
+                    max={selectedRoom?.maximumGuests || 10}
                     value={newBooking.guests}
                     onChange={(e) =>
                       setNewBooking((p) => ({
                         ...p,
-                        guests: parseInt(e.target.value) || 1,
+                        guests: Number(e.target.value),
+                      }))
+                    }
+                    style={inputStyle}
+                  />
+
+                  {selectedRoom &&
+                    newBooking.guests > selectedRoom.maximumGuests && (
+                      <div
+                        style={{
+                          marginTop: "6px",
+                          fontSize: "12px",
+                          color: "#ef4444",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Maximum {selectedRoom.maximumGuests} guests allowed in
+                        this room
+                      </div>
+                    )}
+                </div>
+
+                {/* Number of Rooms */}
+                <div>
+                  <label style={labelStyle}>Number of Rooms</label>
+
+                  <input
+                    type="number"
+                    min="1"
+                    value={newBooking.numberOfRooms}
+                    onChange={(e) =>
+                      setNewBooking((p) => ({
+                        ...p,
+                        numberOfRooms: Number(e.target.value),
                       }))
                     }
                     style={inputStyle}
@@ -2174,62 +2317,111 @@ export default function Bookings({ theme = "dark" }) {
                 </div>
 
                 {/* Amount preview */}
-                {newBooking.checkIn &&
-                  newBooking.checkOut &&
-                  (() => {
-                    const selectedRoom = rooms.find(
-                      (room) => room.name === newBooking.room,
-                    );
+                {/* Booking Summary */}
+                <div
+                  style={{
+                    background: isDark
+                      ? "rgba(255,255,255,0.03)"
+                      : "rgba(0,0,0,0.03)",
 
-                    const price = selectedRoom?.price || 0;
+                    border: `1px solid ${cardBorder}`,
+                    borderRadius: "14px",
+                    padding: "14px",
+                    marginTop: "4px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: text,
+                      marginBottom: "10px",
+                    }}
+                  >
+                    Booking Summary
+                  </div>
 
-                    const nights = Math.max(
-                      1,
-                      Math.round(
-                        (new Date(newBooking.checkOut) -
-                          new Date(newBooking.checkIn)) /
-                          86400000,
-                      ),
-                    );
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      color: subtext,
+                      fontSize: "13px",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    <span>Room</span>
+                    <span>{newBooking.room || "-"}</span>
+                  </div>
 
-                    const amount = price * nights;
-                    if (nights <= 0) return null;
-                    return (
-                      <div
-                        style={{
-                          padding: "12px 14px",
-                          borderRadius: "10px",
-                          background: isDark
-                            ? "rgba(232,184,109,0.08)"
-                            : "rgba(232,184,109,0.1)",
-                          border: "1px solid rgba(232,184,109,0.2)",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: subtext,
-                            fontWeight: "600",
-                          }}
-                        >
-                          {nights} night{nights > 1 ? "s" : ""} × ₹
-                          {price.toLocaleString()}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: "800",
-                            color: isDark ? "#e8b86d" : "#b45309",
-                          }}
-                        >
-                          ₹{amount.toLocaleString()}
-                        </span>
-                      </div>
-                    );
-                  })()}
+                  {newBooking.plan && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        color: subtext,
+                        fontSize: "13px",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      <span>Plan</span>
+                      <span>{newBooking.plan}</span>
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      color: subtext,
+                      fontSize: "13px",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    <span>Price/Night</span>
+                    <span>₹{pricePerNight}</span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      color: subtext,
+                      fontSize: "13px",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    <span>Nights</span>
+                    <span>{nights}</span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      color: subtext,
+                      fontSize: "13px",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    <span>Guests</span>
+                    <span>{newBooking.guests}</span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginTop: "12px",
+                      fontSize: "16px",
+                      fontWeight: "800",
+                      color: isDark ? "#e8b86d" : "#b45309",
+                    }}
+                  >
+                    <span>Total</span>
+                    <span>₹{estimatedTotal.toLocaleString()}</span>
+                  </div>
+                </div>
 
                 {/* Submit */}
                 <button
