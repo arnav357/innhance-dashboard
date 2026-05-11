@@ -2351,48 +2351,10 @@ export default function Rooms({ theme = "dark" }) {
               </div>
             );
           })}
-
-          <div
-            onClick={() => {
-              setShowAdd(true);
-              setEditingId(null);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className={`add-new-room-card ${isDark ? "dark" : "light"}`}
-          >
-            <div
-              style={{
-                width: "50px",
-                height: "50px",
-                borderRadius: "14px",
-                background: "rgba(232,184,109,0.1)",
-                border: "1px solid rgba(232,184,109,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "22px",
-              }}
-            >
-              ➕
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "700",
-                  color: text,
-                  marginBottom: "4px",
-                }}
-              >
-                Add Room Type
-              </div>
-              <div style={{ fontSize: "12px", color: subtext }}>
-                Click to add a new room category
-              </div>
-            </div>
-          </div>
         </div>
       </div>
+
+      
       {/* ── Banquet Section ───────────────────── */}
       <div style={{ marginTop: "40px" }}>
         <div

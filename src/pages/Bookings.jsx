@@ -287,7 +287,7 @@ export default function Bookings({ theme = "dark" }) {
   const counts = {
     all: bookings.length,
     confirmed: bookings.filter((b) => b.bookingStatus === "confirmed").length,
-    pending: bookings.filter((b) => b.bookingStatus === "pending").length,
+    pending: bookings.filter((b) => b.paymentStatus !== "verified").length,
     cancelled: bookings.filter((b) => b.bookingStatus === "cancelled").length,
     completed: bookings.filter((b) => b.bookingStatus === "completed").length,
   };
@@ -732,10 +732,7 @@ export default function Bookings({ theme = "dark" }) {
 
   const pricePerNight = selectedPlan?.price || selectedRoom?.price || 0;
 
-  const estimatedTotal =
-  pricePerNight *
-  nights *
-  newBooking.numberOfRooms;
+  const estimatedTotal = pricePerNight * nights * newBooking.numberOfRooms;
 
   return (
     <div>
@@ -1429,9 +1426,12 @@ export default function Bookings({ theme = "dark" }) {
                                     ✓ Check-out
                                   </button>
                                 )}
-                                {["pending", "expired"].includes(
-                                  b.paymentStatus,
-                                ) &&
+                                {[
+                                  "pending",
+                                  "expired",
+                                  "failed",
+                                  "settled",
+                                ].includes(b.paymentStatus) &&
                                   b.bookingStatus === "confirmed" && (
                                     <button
                                       className="action-btn"

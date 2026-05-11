@@ -799,7 +799,7 @@
   background: var(--cardBg);
   border: 1px solid var(--cardBorder);
   transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-  cursor: pointer;
+  /* cursor: pointer; */
 }
 
 .list-item:hover {

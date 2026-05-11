@@ -101,6 +101,7 @@ export default function Overview({ theme = "dark" }) {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [managerName, setManagerName] = useState("");
+  const [alerts, setAlerts] = useState([]);
 
   useGSAP(
     () => {
@@ -142,9 +143,30 @@ export default function Overview({ theme = "dark" }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth <= 1100);
 
-
   const hotelData = localStorage.getItem("user");
   const hotel = hotelData ? JSON.parse(hotelData) : {};
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const lastMonth = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
+
+  // ✅ FETCH ALERTS
+  useEffect(() => {
+    fetch(`${backendUrl}/dashboard/alerts`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setAlerts(data.alerts || []);
+      })
+      .catch(console.error);
+  }, []);
 
   // ✅ RESIZE EFFECT
   useEffect(() => {
@@ -182,6 +204,11 @@ export default function Overview({ theme = "dark" }) {
   const [showTutorial, setShowTutorial] = useState(
     () => !localStorage.getItem("innhance_tutorial_seen"),
   );
+  const [tasks, setTasks] = useState([]);
+
+  const [goalTitle, setGoalTitle] = useState("");
+
+  const [goalDescription, setGoalDescription] = useState("");
 
   function dismissTutorial() {
     localStorage.setItem("innhance_tutorial_seen", "1");
@@ -199,6 +226,68 @@ export default function Overview({ theme = "dark" }) {
     return () => clearInterval(interval);
   }, [greeting]);
 
+  // FETCH TODAYS TASKS
+  useEffect(() => {
+    fetch(`${backendUrl}/dashboard/today`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setTasks(data.tasks || []);
+      })
+      .catch(console.error);
+  }, []);
+
+  // complete task
+  const completeTask = async (taskId) => {
+    try {
+      await fetch(`${backendUrl}/dashboard/complete/${taskId}`, {
+        method: "PATCH",
+
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      setTasks((prev) => prev.filter((t) => t._id !== taskId));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Create tomorrow goal function
+  const createTomorrowGoal = async () => {
+    try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const res = await fetch(`${backendUrl}/dashboard/create`, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+
+        body: JSON.stringify({
+          title: goalTitle,
+          description: goalDescription,
+          taskDate: tomorrow,
+        }),
+      });
+
+      const data = await res.json();
+
+      setGoalTitle("");
+      setGoalDescription("");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // ✅ LOADING
   if (loading) {
     return <div style={{ color: "white", padding: "20px" }}>Loading...</div>;
@@ -211,9 +300,21 @@ export default function Overview({ theme = "dark" }) {
     .filter((b) => b.paymentStatus === "verified" && b.status !== "cancelled")
     .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
 
-  const pending = bookings.filter((b) => b.status === "pending").length;
+  const pending = bookings.filter((b) => b.paymentStatus !== "verified").length;
   const confirmed = bookings.filter((b) => b.status === "confirmed").length;
-  const activeCustomers = new Set(bookings.map((b) => b.phone)).size;
+  const activeCustomers = new Set(
+    bookings
+      .filter((b) => {
+        const d = new Date(b.createdAt);
+
+        return (
+          b.status === "confirmed" &&
+          d.getMonth() === currentMonth &&
+          d.getFullYear() === currentYear
+        );
+      })
+      .map((b) => b.phone),
+  ).size;
 
   // ✅ FORMAT FOR UI
   const formattedBookings = bookings.map((b) => ({
@@ -237,14 +338,6 @@ export default function Overview({ theme = "dark" }) {
   const tableBorder = isDark ? "rgba(255,255,255,0.05)" : "rgba(47,62,52,0.1)";
   const tableHeader = isDark ? "rgba(255,255,255,0.3)" : "#6B6B7A";
   const insightBg = isDark ? "rgba(232,184,109,0.06)" : "rgba(184,149,91,0.1)";
-
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-
-  const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
-  const lastMonth = lastMonthDate.getMonth();
-  const lastMonthYear = lastMonthDate.getFullYear();
 
   const currentMonthRevenue = bookings
     .filter((b) => {
@@ -323,8 +416,8 @@ export default function Overview({ theme = "dark" }) {
       value: `₹${totalRevenue}`,
       icon: "💰",
       color: isDark ? "#e8b86d" : "#2568b9",
-      change: "+8%",
-      trend: "up",
+      change: `${Math.abs(revenueGrowth).toFixed(0)}%`,
+      trend: revenueTrend,
       bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
       border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
       spark: [40, 55, 48, 62, 58, 72, 80],
@@ -335,8 +428,8 @@ export default function Overview({ theme = "dark" }) {
       value: totalBookings,
       icon: "📊",
       color: isDark ? "#e8b86d" : "#2568b9",
-      change: "+12%",
-      trend: "up",
+      change: `${Math.abs(bookingsGrowth).toFixed(0)}%`,
+      trend: bookingsTrend,
       bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
       border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
       spark: [30, 38, 35, 50, 45, 60, 62],
@@ -347,8 +440,6 @@ export default function Overview({ theme = "dark" }) {
       value: activeCustomers,
       icon: "👤",
       color: isDark ? "#e8b86d" : "#2568b9",
-      change: "+5",
-      trend: "up",
       bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
       border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
       spark: [50, 52, 48, 58, 60, 65, 67],
@@ -359,8 +450,6 @@ export default function Overview({ theme = "dark" }) {
       value: pending,
       icon: "⏳",
       color: isDark ? "#e8b86d" : "#2568b9",
-      change: "-2",
-      trend: "down",
       bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
       border: isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)",
       spark: [10, 12, 9, 11, 8, 9, 7],
@@ -402,6 +491,73 @@ export default function Overview({ theme = "dark" }) {
               {hotel.managername || "Manager"}
             </span>
           </p>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: isMobile ? "flex-start" : "center",
+            justifyContent: "space-between",
+            flexDirection: isMobile ? "column" : "row",
+            gap: "12px",
+            marginTop: "18px",
+            marginBottom: "22px",
+            padding: "16px 18px",
+            borderRadius: "18px",
+            background: isDark
+              ? "rgba(255,255,255,0.03)"
+              : "rgba(255,255,255,0.85)",
+            border: isDark
+              ? "1px solid rgba(232,184,109,0.12)"
+              : "1px solid rgba(0,0,0,0.06)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: "16px",
+                fontWeight: "700",
+                color: text,
+                marginBottom: "4px",
+              }}
+            >
+              🎥 Watch a tutorial video of the dashboard
+            </div>
+
+            <div
+              style={{
+                fontSize: "13px",
+                color: subtext,
+                lineHeight: "1.5",
+              }}
+            >
+              Learn how to manage bookings, rooms, chats, analytics and hotel
+              operations effectively.
+            </div>
+          </div>
+
+          <button
+            onClick={() =>
+              window.open(import.meta.env.VITE_DASHBOARD_TUTORIAL_URL, "_blank")
+            }
+            style={{
+              border: "none",
+              outline: "none",
+              cursor: "pointer",
+              padding: "12px 18px",
+              borderRadius: "12px",
+              fontWeight: "700",
+              fontSize: "14px",
+              whiteSpace: "nowrap",
+              background: "#e8b86d",
+              color: "#111",
+              boxShadow: "0 8px 22px rgba(232,184,109,0.25)",
+              transition: "0.2s ease",
+            }}
+          >
+            ▶ Watch Tutorial
+          </button>
         </div>
 
         {/* Tutorial Banner - shows only once on first login */}
@@ -494,12 +650,23 @@ export default function Overview({ theme = "dark" }) {
               <p className="stat-card-value">{stat.value}</p>
               <div className="stat-card-footer">
                 <div>
-                  <span
-                    className={`stat-trend ${stat.trend === "up" ? "up" : "down"}`}
-                  >
-                    {stat.trend === "up" ? "↑" : "↓"} {stat.change}
-                  </span>
-                  <div className="stat-trend-text">this month</div>
+                  <div>
+                    {stat.change && stat.trend ? (
+                      <>
+                        <span
+                          className={`stat-trend ${
+                            stat.trend === "up" ? "up" : "down"
+                          }`}
+                        >
+                          {stat.trend === "up" ? "↑" : "↓"} {stat.change}
+                        </span>
+
+                        <div className="stat-trend-text">this month</div>
+                      </>
+                    ) : (
+                      <div className="stat-trend-text">this month</div>
+                    )}
+                  </div>
                 </div>
                 {!isMobile && (
                   <Sparkline data={stat.spark} color={stat.color} />
@@ -518,40 +685,134 @@ export default function Overview({ theme = "dark" }) {
           }}
         >
           {/* Today's Actions */}
+
           <div className={`main-grid-item ${isDark ? "dark" : "light"}`}>
             <div className="grid-item-header">
               <h2 className="grid-item-title">Today's Actions</h2>
             </div>
             <div className="simple-list">
-              <div className="list-item">
-                <span className="list-item-icon">📈</span>
-                <div className="list-item-content">
-                  <div className="list-item-title">Increase Suite price</div>
-                  <div className="list-item-desc">
-                    High demand detected for this weekend
-                  </div>
+              {tasks.length === 0 ? (
+                <div
+                  style={{
+                    color: "rgba(255,255,255,0.6)",
+                    fontSize: "14px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  No actions for today
                 </div>
-              </div>
-              <div className="list-item">
-                <span className="list-item-icon">📞</span>
-                <div className="list-item-content">
-                  <div className="list-item-title">
-                    Follow up with hot leads
+              ) : (
+                tasks.map((task) => (
+                  <div
+                    key={task._id}
+                    className="list-item"
+                    style={{
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <button
+                      onClick={() => completeTask(task._id)}
+                      style={{
+                        border: "none",
+                        background: "rgba(34,197,94,0.12)",
+                        color: "#22c55e",
+                        width: "34px",
+                        height: "34px",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        fontSize: "16px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      ✓
+                    </button>
+
+                    <div className="list-item-content">
+                      <div className="list-item-title">{task.title}</div>
+
+                      <div
+                        className="list-item-desc"
+                        style={{
+                          whiteSpace: "normal",
+                          overflow: "visible",
+                          textOverflow: "unset",
+                          lineHeight: "1.5",
+                          marginTop: "4px",
+                          color: text,
+                        }}
+                      >
+                        {task.description}
+                      </div>
+                    </div>
                   </div>
-                  <div className="list-item-desc">
-                    3 inquiries pending response
-                  </div>
-                </div>
-              </div>
-              <div className="list-item">
-                <span className="list-item-icon">⚠️</span>
-                <div className="list-item-content">
-                  <div className="list-item-title">Weekend occupancy alert</div>
-                  <div className="list-item-desc">
-                    Only 2 standard rooms left
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
+            </div>
+
+            <div
+              style={{
+                marginTop: "18px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <input
+                value={goalTitle}
+                onChange={(e) => setGoalTitle(e.target.value)}
+                placeholder="Tomorrow goal title"
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.04)",
+                  color: text,
+                  outline: "none",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+              />
+
+              <textarea
+                value={goalDescription}
+                onChange={(e) => setGoalDescription(e.target.value)}
+                placeholder="Description"
+                rows={3}
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.04)",
+                  color: text,
+                  outline: "none",
+                  resize: "none",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                }}
+              />
+
+              <button
+                onClick={createTomorrowGoal}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: "none",
+                  background:
+                    "linear-gradient(135deg, #e8b86d 0%, #d9a95f 100%)",
+                  color: "#111827",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  transition: "0.2s ease",
+                  boxShadow: "0 4px 14px rgba(232,184,109,0.25)",
+                }}
+              >
+                + Add Tomorrow Goal
+              </button>
             </div>
           </div>
 
@@ -561,35 +822,93 @@ export default function Overview({ theme = "dark" }) {
               <h2 className="grid-item-title">Smart Alerts</h2>
             </div>
             <div className="simple-list">
-              <div className="list-item">
-                <span className="list-item-icon">😴</span>
-                <div className="list-item-content">
-                  <div className="list-item-title">
-                    High intent lead inactive
-                  </div>
-                  <div className="list-item-desc">
-                    Guest looking at Deluxe Suite left chat
-                  </div>
+              {alerts.length === 0 ? (
+                <div
+                  style={{
+                    color: subtext,
+                    fontSize: "14px",
+                  }}
+                >
+                  No alerts for today
                 </div>
-              </div>
-              <div className="list-item">
-                <span className="list-item-icon">💳</span>
-                <div className="list-item-content">
-                  <div className="list-item-title">Payment pending</div>
-                  <div className="list-item-desc">
-                    Booking #BK00102 waiting for payment
+              ) : (
+                alerts.map((alert, index) => (
+                  <div
+                    className="list-item"
+                    key={index}
+                    style={{
+                      cursor: "default",
+                      alignItems: "flex-start",
+                      padding: "14px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "38px",
+                        height: "38px",
+                        borderRadius: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background:
+                          alert.type === "checkin"
+                            ? "rgba(34,197,94,0.12)"
+                            : "rgba(59,130,246,0.12)",
+                        fontSize: "18px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {alert.icon}
+                    </div>
+
+                    <div className="list-item-content">
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div className="list-item-title">{alert.title}</div>
+
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            padding: "3px 8px",
+                            borderRadius: "999px",
+                            background:
+                              alert.type === "checkin"
+                                ? "rgba(34,197,94,0.12)"
+                                : "rgba(59,130,246,0.12)",
+                            color:
+                              alert.type === "checkin" ? "#22c55e" : "#3b82f6",
+                            fontWeight: "600",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.4px",
+                          }}
+                        >
+                          {alert.type}
+                        </span>
+                      </div>
+
+                      <div
+                        className="list-item-desc"
+                        style={{
+                          whiteSpace: "normal",
+                          overflow: "visible",
+                          textOverflow: "unset",
+                          lineHeight: "1.5",
+                          marginTop: "4px",
+                          color: subtext,
+                        }}
+                      >
+                        {alert.description}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="list-item">
-                <span className="list-item-icon">📉</span>
-                <div className="list-item-content">
-                  <div className="list-item-title">Drop-off after pricing</div>
-                  <div className="list-item-desc">
-                    3 guests dropped off after seeing suite price
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </div>
 
