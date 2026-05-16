@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import "./Rooms.css";
-// import ImageSlider from "../components/ImageSlider"
 
 const ALL_AMENITIES = [
   "Free WiFi",
@@ -30,6 +29,7 @@ function deriveAvailable(roomNumbers) {
 
 function ImageSlider({ room, subtext }) {
   const [index, setIndex] = useState(0);
+  const [fullscreenMedia, setFullscreenMedia] = useState(null);
 
   const images = room.images || [];
 
@@ -43,104 +43,110 @@ function ImageSlider({ room, subtext }) {
 
   if (!images.length) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          flexDirection: "column",
-          gap: "6px",
-        }}
-      >
-        <span style={{ fontSize: "28px" }}>🛏️</span>
-        <span style={{ fontSize: "12px", color: subtext }}>No image</span>
+      <div className="slider-no-image">
+        <span className="slider-no-image__icon">🛏️</span>
+        <span className="slider-no-image__label" style={{ color: subtext }}>
+          No image
+        </span>
       </div>
     );
   }
 
+  const currentMedia = images[index];
+  const isVideo =
+    typeof currentMedia === "string"
+      ? /\.(mp4|mov|webm|ogg)$/i.test(currentMedia)
+      : currentMedia?.isVideo;
+
+  const mediaSrc =
+    typeof currentMedia === "string" ? currentMedia : currentMedia.preview;
+
   return (
     <>
-      <img
-        src={images[index]}
-        alt={room.type}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-        }}
-      />
+      {isVideo ? (
+        <video
+          src={mediaSrc}
+          controls
+          muted
+          playsInline
+          style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
+        />
+      ) : (
+        <img
+          src={mediaSrc}
+          alt={room.type}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      )}
 
-      {/* Prev */}
+      <button
+        className="slider-expand-btn"
+        onClick={() => setFullscreenMedia(currentMedia)}
+      >
+        ⛶
+      </button>
+
       {images.length > 1 && (
-        <button
-          onClick={prev}
-          style={{
-            position: "absolute",
-            left: "8px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            background: "rgba(0,0,0,0.5)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "50%",
-            width: "28px",
-            height: "28px",
-            cursor: "pointer",
-            zIndex: 5,
-          }}
-        >
+        <button className="slider-prev-btn" onClick={prev}>
           ‹
         </button>
       )}
 
-      {/* Next */}
       {images.length > 1 && (
-        <button
-          onClick={next}
-          style={{
-            position: "absolute",
-            right: "8px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            background: "rgba(0,0,0,0.5)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "50%",
-            width: "28px",
-            height: "28px",
-            cursor: "pointer",
-            zIndex: 5,
-          }}
-        >
+        <button className="slider-next-btn" onClick={next}>
           ›
         </button>
       )}
 
-      {/* Dots */}
       {images.length > 1 && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "8px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            display: "flex",
-            gap: "5px",
-            zIndex: 5,
-          }}
-        >
+        <div className="slider-dots">
           {images.map((_, i) => (
             <div
               key={i}
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: i === index ? "#fff" : "rgba(255,255,255,0.4)",
-              }}
+              className={`slider-dot ${i === index ? "slider-dot--active" : "slider-dot--inactive"}`}
             />
           ))}
+        </div>
+      )}
+
+      {fullscreenMedia && (
+        <div
+          className="slider-fullscreen-overlay"
+          onClick={() => setFullscreenMedia(null)}
+        >
+          <button
+            className="slider-fullscreen-close"
+            onClick={() => setFullscreenMedia(null)}
+          >
+            ×
+          </button>
+
+          {/\.(mp4|mov|webm|ogg)$/i.test(
+            typeof fullscreenMedia === "string"
+              ? fullscreenMedia
+              : fullscreenMedia.preview,
+          ) ? (
+            <video
+              src={
+                typeof fullscreenMedia === "string"
+                  ? fullscreenMedia
+                  : fullscreenMedia.preview
+              }
+              controls
+              autoPlay
+              className="slider-fullscreen-media"
+            />
+          ) : (
+            <img
+              src={
+                typeof fullscreenMedia === "string"
+                  ? fullscreenMedia
+                  : fullscreenMedia.preview
+              }
+              alt=""
+              className="slider-fullscreen-media"
+            />
+          )}
         </div>
       )}
     </>
@@ -149,106 +155,25 @@ function ImageSlider({ room, subtext }) {
 
 // ── Confirm dialog ───────────────────────────────────────────────
 function ConfirmDialog({ message, onConfirm, onCancel, isDark }) {
+  const theme = isDark ? "dark" : "light";
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 2000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
+    <div className="confirm-dialog-backdrop">
       <div
+        className="confirm-dialog-overlay"
         onClick={onCancel}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "rgba(0,0,0,0.6)",
-          backdropFilter: "blur(4px)",
-        }}
       />
-      <div
-        style={{
-          position: "relative",
-          background: isDark ? "#0f0f1e" : "#fff",
-          border: "1px solid rgba(239,68,68,0.3)",
-          borderRadius: "18px",
-          padding: "28px 24px",
-          maxWidth: "380px",
-          width: "100%",
-          animation: "modalIn 0.22s ease forwards",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "32px",
-            textAlign: "center",
-            marginBottom: "12px",
-          }}
-        >
-          🗑️
-        </div>
-        <h3
-          style={{
-            fontSize: "14px",
-            fontWeight: "700",
-            color: isDark ? "#fff" : "#0f172a",
-            textAlign: "center",
-            marginBottom: "8px",
-          }}
-        >
-          Delete Room Type?
-        </h3>
-        <p
-          style={{
-            fontSize: "11px",
-            color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
-            textAlign: "center",
-            marginBottom: "22px",
-            lineHeight: "1.5",
-          }}
-        >
-          {message}
-        </p>
-        <div style={{ display: "flex", gap: "10px" }}>
+      <div className={`confirm-dialog-box ${theme}`}>
+        <div className="confirm-dialog-icon">🗑️</div>
+        <h3 className={`confirm-dialog-title ${theme}`}>Delete Room Type?</h3>
+        <p className={`confirm-dialog-message ${theme}`}>{message}</p>
+        <div className="confirm-dialog-actions">
           <button
             onClick={onCancel}
-            style={{
-              flex: 1,
-              padding: "11px",
-              borderRadius: "10px",
-              background: isDark
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
-              color: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
-              fontSize: "11px",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
+            className={`confirm-dialog-cancel ${theme}`}
           >
             Cancel
           </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              flex: 1,
-              padding: "11px",
-              borderRadius: "10px",
-              background: "rgba(239,68,68,0.12)",
-              border: "1px solid rgba(239,68,68,0.3)",
-              color: "#dc2626",
-              fontSize: "11px",
-              fontWeight: "700",
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
+          <button onClick={onConfirm} className="confirm-dialog-confirm">
             Delete
           </button>
         </div>
@@ -260,30 +185,15 @@ function ConfirmDialog({ message, onConfirm, onCancel, isDark }) {
 // ── Real Room Grid ────────────────────────────────────
 function RoomGrid({ room, onToggle, isDark, subtext }) {
   const [tooltip, setTooltip] = useState(null);
+  const theme = isDark ? "dark" : "light";
 
   if (!room.roomNumbers || room.roomNumbers.length === 0) {
     return (
-      <div
-        style={{
-          marginBottom: "12px",
-          padding: "12px",
-          borderRadius: "10px",
-          background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
-          border: `1px dashed ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontSize: "13px", color: subtext }}>
+      <div className={`room-grid-empty ${theme}`} style={{ marginBottom: "12px" }}>
+        <div className="room-grid-empty__title" style={{ color: subtext }}>
           No room numbers added yet
         </div>
-        <div
-          style={{
-            fontSize: "12px",
-            color: subtext,
-            opacity: 0.6,
-            marginTop: "3px",
-          }}
-        >
+        <div className="room-grid-empty__subtitle" style={{ color: subtext }}>
           Edit this room type to add room numbers
         </div>
       </div>
@@ -292,22 +202,11 @@ function RoomGrid({ room, onToggle, isDark, subtext }) {
 
   return (
     <div style={{ marginBottom: "12px" }}>
-      <div
-        style={{
-          fontSize: "12px",
-          color: subtext,
-          fontWeight: "700",
-          textTransform: "uppercase",
-          letterSpacing: "0.5px",
-          marginBottom: "8px",
-        }}
-      >
+      <div className="room-grid-header" style={{ color: subtext }}>
         Room Grid{" "}
-        <span style={{ fontSize: "9px", fontWeight: "500", opacity: 0.6 }}>
-          — tap to toggle
-        </span>
+        <span className="room-grid-header__hint">— tap to toggle</span>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+      <div className="room-grid-cells">
         {room.roomNumbers.map((r, i) => (
           <div
             key={i}
@@ -315,32 +214,8 @@ function RoomGrid({ room, onToggle, isDark, subtext }) {
             onClick={() => onToggle(room.id, i)}
             onMouseEnter={() => setTooltip({ num: r.num, booked: r.booked })}
             onMouseLeave={() => setTooltip(null)}
-            style={{
-              minWidth: "32px",
-              height: "32px",
-              borderRadius: "7px",
-              padding: "0 5px",
-              background: r.booked
-                ? "rgba(239,68,68,0.18)"
-                : "rgba(34,197,94,0.15)",
-              border: `1.5px solid ${r.booked ? "rgba(239,68,68,0.4)" : "rgba(34,197,94,0.4)"}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "12px",
-              fontWeight: "800",
-              color: r.booked ? "#ef4444" : "#22c55e",
-              cursor: "pointer",
-              transition:
-                "transform 0.12s, background 0.15s, border-color 0.15s",
-              userSelect: "none",
-              boxShadow: r.booked
-                ? "0 1px 4px rgba(239,68,68,0.15)"
-                : "0 1px 4px rgba(34,197,94,0.12)",
-            }}
-            onMouseDown={(e) =>
-              (e.currentTarget.style.transform = "scale(0.9)")
-            }
+            className={`room-grid-cell ${r.booked ? "room-grid-cell--booked" : "room-grid-cell--available"}`}
+            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.9)")}
             onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
           >
             {r.num}
@@ -348,47 +223,13 @@ function RoomGrid({ room, onToggle, isDark, subtext }) {
         ))}
       </div>
       {/* Legend */}
-      <div style={{ display: "flex", gap: "14px", marginTop: "8px" }}>
-        <span
-          style={{
-            fontSize: "12px",
-            color: "#22c55e",
-            fontWeight: "600",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-          }}
-        >
-          <span
-            style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "2px",
-              background: "rgba(34,197,94,0.4)",
-              display: "inline-block",
-            }}
-          />{" "}
+      <div className="room-grid-legend">
+        <span className="room-grid-legend__item room-grid-legend__item--available">
+          <span className="room-grid-legend__dot room-grid-legend__dot--available" />{" "}
           Available
         </span>
-        <span
-          style={{
-            fontSize: "12px",
-            color: "#ef4444",
-            fontWeight: "600",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-          }}
-        >
-          <span
-            style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "2px",
-              background: "rgba(239,68,68,0.4)",
-              display: "inline-block",
-            }}
-          />{" "}
+        <span className="room-grid-legend__item room-grid-legend__item--booked">
+          <span className="room-grid-legend__dot room-grid-legend__dot--booked" />{" "}
           Booked
         </span>
       </div>
@@ -423,6 +264,20 @@ function RoomNumberInput({ roomNumbers, onChange, isDark }) {
     onChange(newRooms);
   }
 
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    border: `1px solid ${border}`,
+    background: inputBg,
+    color: text,
+    fontSize: "13px",
+    fontFamily: "inherit",
+    outline: "none",
+    boxSizing: "border-box",
+    colorScheme: isDark ? "dark" : "light",
+  };
+
   return (
     <div>
       <div
@@ -441,28 +296,9 @@ function RoomNumberInput({ roomNumbers, onChange, isDark }) {
         value={inputVal}
         onChange={(e) => handleChange(e.target.value)}
         placeholder="e.g. 101, 102, 103, A1, B2, P1"
-        style={{
-          width: "100%",
-          padding: "10px 14px",
-          borderRadius: "10px",
-          border: `1px solid ${border}`,
-          background: inputBg,
-          color: text,
-          fontSize: "13px",
-          fontFamily: "inherit",
-          outline: "none",
-          boxSizing: "border-box",
-          colorScheme: isDark ? "dark" : "light",
-        }}
+        style={inputStyle}
       />
-      <div
-        style={{
-          fontSize: "13px",
-          color: subtext,
-          marginTop: "5px",
-          lineHeight: "1.5",
-        }}
-      >
+      <div style={{ fontSize: "13px", color: subtext, marginTop: "5px", lineHeight: "1.5" }}>
         Enter your hotel's actual room numbers separated by commas.
       </div>
       {roomNumbers.length > 0 && (
@@ -485,8 +321,7 @@ function RoomNumberInput({ roomNumbers, onChange, isDark }) {
               letterSpacing: "0.4px",
             }}
           >
-            Preview — {roomNumbers.length} room
-            {roomNumbers.length !== 1 ? "s" : ""}
+            Preview — {roomNumbers.length} room{roomNumbers.length !== 1 ? "s" : ""}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
             {roomNumbers.map((r, i) => (
@@ -524,7 +359,6 @@ function AmenitySelector({ selected, onChange, isDark }) {
   const [customInput, setCustomInput] = useState("");
   const [showCustom, setShowCustom] = useState(false);
   const border = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)";
-  const inactiveBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
   const inactiveColor = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
 
   function toggleAmenity(a) {
@@ -538,6 +372,7 @@ function AmenitySelector({ selected, onChange, isDark }) {
     setCustomInput("");
     setShowCustom(false);
   }
+
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
       {ALL_AMENITIES.map((a) => (
@@ -558,18 +393,7 @@ function AmenitySelector({ selected, onChange, isDark }) {
             key={a}
             type="button"
             onClick={() => toggleAmenity(a)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "100px",
-              fontSize: "12px",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              border: "1px solid rgba(167,139,250,0.5)",
-              background: "rgba(167,139,250,0.15)",
-              color: "#a78bfa",
-              transition: "all 0.15s",
-            }}
+            className="custom-amenity-tag"
           >
             ✓ {a} ×
           </button>
@@ -582,33 +406,10 @@ function AmenitySelector({ selected, onChange, isDark }) {
             onKeyDown={(e) => e.key === "Enter" && addCustom()}
             placeholder="Type amenity..."
             autoFocus
-            style={{
-              padding: "6px 12px",
-              borderRadius: "100px",
-              fontSize: "12px",
-              border: "1px solid rgba(167,139,250,0.5)",
-              background: "rgba(167,139,250,0.1)",
-              color: isDark ? "#fff" : "#0f172a",
-              outline: "none",
-              fontFamily: "inherit",
-              width: "130px",
-            }}
+            className="custom-amenity-input"
+            style={{ color: isDark ? "#fff" : "#0f172a" }}
           />
-          <button
-            type="button"
-            onClick={addCustom}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "100px",
-              fontSize: "12px",
-              background: "rgba(167,139,250,0.2)",
-              border: "1px solid rgba(167,139,250,0.4)",
-              color: "#a78bfa",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontFamily: "inherit",
-            }}
-          >
+          <button type="button" onClick={addCustom} className="custom-amenity-add-btn">
             Add
           </button>
           <button
@@ -632,18 +433,7 @@ function AmenitySelector({ selected, onChange, isDark }) {
         <button
           type="button"
           onClick={() => setShowCustom(true)}
-          style={{
-            padding: "6px 12px",
-            borderRadius: "100px",
-            fontSize: "12px",
-            fontWeight: "600",
-            cursor: "pointer",
-            fontFamily: "inherit",
-            border: "1px dashed rgba(167,139,250,0.4)",
-            background: "rgba(167,139,250,0.06)",
-            color: "#a78bfa",
-            transition: "all 0.15s",
-          }}
+          className="custom-amenity-other-btn"
         >
           + Other
         </button>
@@ -659,15 +449,12 @@ function ImageUploader({ images = [], onChange }) {
 
   function handleFile(e) {
     const files = Array.from(e.target.files || []);
-
     if (!files.length) return;
-
     const newImages = files.map((file) => ({
       file,
       preview: URL.createObjectURL(file),
       isVideo: file.type.startsWith("video/"),
     }));
-
     onChange([...images, ...newImages]);
   }
 
@@ -681,85 +468,33 @@ function ImageUploader({ images = [], onChange }) {
         onClick={() => fileRef.current.click()}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        style={{
-          width: "100%",
-          minHeight: "140px",
-          borderRadius: "12px",
-          overflow: "hidden",
-          position: "relative",
-          cursor: "pointer",
-          border: `2px dashed ${
-            hovered ? "rgba(232,184,109,0.6)" : "rgba(232,184,109,0.3)"
-          }`,
-          background: "rgba(232,184,109,0.04)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "all 0.2s",
-          padding: "12px",
-        }}
+        className={`image-uploader-zone ${hovered ? "image-uploader-zone--hovered" : "image-uploader-zone--idle"}`}
       >
         {images.length > 0 ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill,minmax(100px,1fr))",
-              gap: "10px",
-              width: "100%",
-            }}
-          >
+          <div className="image-uploader-grid">
             {images.map((img, idx) => (
-              <div
-                key={idx}
-                style={{
-                  position: "relative",
-                  height: "90px",
-                  borderRadius: "10px",
-                  overflow: "hidden",
-                }}
-              >
+              <div key={idx} className="image-uploader-thumb">
                 {/\.(mp4|mov|webm|ogg)$/i.test(img.preview || img) ? (
                   <video
                     src={img.preview || img}
                     controls
                     muted
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    className="image-uploader-thumb__media"
                   />
                 ) : (
                   <img
                     src={img.preview || img}
                     alt=""
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    className="image-uploader-thumb__media"
                   />
                 )}
-
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     removeImage(idx);
                   }}
-                  style={{
-                    position: "absolute",
-                    top: "5px",
-                    right: "5px",
-                    width: "22px",
-                    height: "22px",
-                    borderRadius: "50%",
-                    border: "none",
-                    background: "rgba(0,0,0,0.7)",
-                    color: "#fff",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                  }}
+                  className="image-uploader-thumb__remove"
                 >
                   ×
                 </button>
@@ -767,16 +502,9 @@ function ImageUploader({ images = [], onChange }) {
             ))}
           </div>
         ) : (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "24px", marginBottom: "6px" }}>📷</div>
-
-            <div
-              style={{
-                fontSize: "12px",
-                color: "rgba(255,255,255,0.5)",
-                fontWeight: "500",
-              }}
-            >
+          <div className="image-uploader-placeholder">
+            <div className="image-uploader-placeholder__icon">📷</div>
+            <div className="image-uploader-placeholder__label">
               Click to upload room images
             </div>
           </div>
@@ -800,8 +528,8 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
   const [form, setForm] = useState({
     type: "",
     price: "",
-    plans: [], // ✅ ADD
-    maximumGuests: 2, // ✅ ADD
+    plans: [],
+    maximumGuests: 2,
     description: "",
     amenities: [],
     images: [],
@@ -832,6 +560,7 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
     boxSizing: "border-box",
     colorScheme: isDark ? "dark" : "light",
   };
+
   const labelStyle = {
     fontSize: "13px",
     fontWeight: "700",
@@ -844,40 +573,18 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
 
   return (
     <div
-      style={{
-        background: isDark ? "rgba(255,255,255,0.03)" : "#fff",
-        border: isDark
-          ? "1px solid rgba(232,184,109,0.3)"
-          : "1px solid rgba(232,184,109,0.4)",
-        borderRadius: "18px",
-        padding: isMobile ? "16px" : "24px",
-        marginBottom: "20px",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-        animation: "slideDown 0.25s ease forwards",
-      }}
+      className={`room-form ${isDark ? "dark" : "light"}`}
+      style={{ padding: isMobile ? "16px" : "24px" }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <h3 style={{ fontSize: "16px", fontWeight: "700", color: text }}>
+      <div className="room-form__header">
+        <h3 className="room-form__title" style={{ color: text }}>
           {title}
         </h3>
         <button
           type="button"
           onClick={onCancel}
-          style={{
-            background: "none",
-            border: "none",
-            color: subtext,
-            cursor: "pointer",
-            fontSize: "22px",
-            lineHeight: 1,
-          }}
+          className="room-form__close-btn"
+          style={{ color: subtext }}
         >
           ×
         </button>
@@ -912,22 +619,12 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
         <div>
           <label style={labelStyle}>Pricing Type</label>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              marginBottom: "12px",
-            }}
-          >
+          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
             <button
               type="button"
               onClick={() => {
                 setPricingMode("fixed");
-
-                setForm((p) => ({
-                  ...p,
-                  plans: [],
-                }));
+                setForm((p) => ({ ...p, plans: [] }));
               }}
               style={{
                 flex: 1,
@@ -951,12 +648,10 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
               type="button"
               onClick={() => {
                 setPricingMode("plans");
-
                 setForm((p) => ({
                   ...p,
                   price: null,
-                  plans:
-                    p.plans.length > 0 ? p.plans : [{ name: "", price: "" }],
+                  plans: p.plans.length > 0 ? p.plans : [{ name: "", price: "" }],
                 }));
               }}
               style={{
@@ -978,36 +673,24 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
             </button>
           </div>
 
-          {/* FIXED PRICE */}
           {pricingMode === "fixed" && (
             <input
               type="number"
               value={form.price}
               placeholder="e.g. 4000"
               onChange={(e) =>
-                setForm((p) => ({
-                  ...p,
-                  price: e.target.value,
-                  plans: [],
-                }))
+                setForm((p) => ({ ...p, price: e.target.value, plans: [] }))
               }
               style={inputStyle}
             />
           )}
 
-          {/* PLAN PRICING */}
           {pricingMode === "plans" && (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {form.plans.map((plan, idx) => (
                 <div
                   key={idx}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr auto",
-                    gap: "8px",
-                  }}
+                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "8px" }}
                 >
                   <input
                     type="text"
@@ -1016,16 +699,10 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
                     onChange={(e) => {
                       const updated = [...form.plans];
                       updated[idx].name = e.target.value;
-
-                      setForm((p) => ({
-                        ...p,
-                        plans: updated,
-                        price: null,
-                      }));
+                      setForm((p) => ({ ...p, plans: updated, price: null }));
                     }}
                     style={inputStyle}
                   />
-
                   <input
                     type="number"
                     value={plan.price}
@@ -1033,24 +710,18 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
                     onChange={(e) => {
                       const updated = [...form.plans];
                       updated[idx].price = Number(e.target.value);
-
-                      setForm((p) => ({
-                        ...p,
-                        plans: updated,
-                        price: null,
-                      }));
+                      setForm((p) => ({ ...p, plans: updated, price: null }));
                     }}
                     style={inputStyle}
                   />
-
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={() =>
                       setForm((p) => ({
                         ...p,
                         plans: p.plans.filter((_, i) => i !== idx),
-                      }));
-                    }}
+                      }))
+                    }
                     style={{
                       border: "none",
                       background: "rgba(239,68,68,0.15)",
@@ -1072,14 +743,7 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
                   setForm((p) => ({
                     ...p,
                     price: null,
-                    plans: [
-                      ...p.plans,
-                      {
-                        name: "",
-                        price: "",
-                        description: "",
-                      },
-                    ],
+                    plans: [...p.plans, { name: "", price: "", description: "" }],
                   }))
                 }
                 style={{
@@ -1105,25 +769,19 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
           type="text"
           value={form.description}
           placeholder="Brief description of this room type"
-          onChange={(e) =>
-            setForm((p) => ({ ...p, description: e.target.value }))
-          }
+          onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
           style={inputStyle}
         />
       </div>
 
       <div style={{ marginBottom: "16px" }}>
         <label style={labelStyle}>Maximum Guests</label>
-
         <input
           type="number"
           value={form.maximumGuests}
           min={1}
           onChange={(e) =>
-            setForm((p) => ({
-              ...p,
-              maximumGuests: Number(e.target.value),
-            }))
+            setForm((p) => ({ ...p, maximumGuests: Number(e.target.value) }))
           }
           style={inputStyle}
         />
@@ -1150,18 +808,7 @@ function RoomForm({ initial, onSave, onCancel, title, isDark, isMobile }) {
         <button
           type="button"
           onClick={() => onSave(form)}
-          style={{
-            padding: "11px 24px",
-            borderRadius: "10px",
-            background: "linear-gradient(135deg, #e8b86d, #c9973a)",
-            border: "none",
-            color: "#1a0f00",
-            fontSize: "12px",
-            fontWeight: "700",
-            cursor: "pointer",
-            fontFamily: "inherit",
-            boxShadow: "0 4px 16px rgba(232,184,109,0.25)",
-          }}
+          className="room-form__save-btn"
         >
           Save Room Type
         </button>
@@ -1199,7 +846,6 @@ function BanquetForm({ initial, onSave, onCancel, isDark, isMobile }) {
 
   const text = isDark ? "#fff" : "#111827";
   const border = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
-
   const inputBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)";
 
   const inputStyle = {
@@ -1216,34 +862,17 @@ function BanquetForm({ initial, onSave, onCancel, isDark, isMobile }) {
 
   return (
     <div
-      style={{
-        background: isDark ? "rgba(255,255,255,0.03)" : "#fff",
-        border: `1px solid ${border}`,
-        borderRadius: "18px",
-        padding: "20px",
-        marginBottom: "24px",
-      }}
+      className={`banquet-form ${isDark ? "dark" : ""}`}
+      style={{ border: `1px solid ${border}` }}
     >
-      <h3
-        style={{
-          fontSize: "18px",
-          fontWeight: "800",
-          marginBottom: "18px",
-          color: text,
-        }}
-      >
+      <h3 className="banquet-form__title" style={{ color: text }}>
         🏛️ Edit Banquet Hall
       </h3>
 
       <div style={{ marginBottom: "16px" }}>
         <ImageUploader
           images={form.images}
-          onChange={(v) =>
-            setForm((p) => ({
-              ...p,
-              images: v,
-            }))
-          }
+          onChange={(v) => setForm((p) => ({ ...p, images: v }))}
         />
       </div>
 
@@ -1258,24 +887,15 @@ function BanquetForm({ initial, onSave, onCancel, isDark, isMobile }) {
         <input
           value={form.name}
           placeholder="Banquet Name"
-          onChange={(e) =>
-            setForm((p) => ({
-              ...p,
-              name: e.target.value,
-            }))
-          }
+          onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
           style={inputStyle}
         />
-
         <input
           type="number"
           value={form.capacity}
           placeholder="Capacity"
           onChange={(e) =>
-            setForm((p) => ({
-              ...p,
-              capacity: Number(e.target.value),
-            }))
+            setForm((p) => ({ ...p, capacity: Number(e.target.value) }))
           }
           style={inputStyle}
         />
@@ -1287,10 +907,7 @@ function BanquetForm({ initial, onSave, onCancel, isDark, isMobile }) {
           value={form.pricePerDay}
           placeholder="Price Per Day"
           onChange={(e) =>
-            setForm((p) => ({
-              ...p,
-              pricePerDay: Number(e.target.value),
-            }))
+            setForm((p) => ({ ...p, pricePerDay: Number(e.target.value) }))
           }
           style={inputStyle}
         />
@@ -1299,36 +916,14 @@ function BanquetForm({ initial, onSave, onCancel, isDark, isMobile }) {
       <textarea
         value={form.description}
         placeholder="Description"
-        onChange={(e) =>
-          setForm((p) => ({
-            ...p,
-            description: e.target.value,
-          }))
-        }
-        style={{
-          ...inputStyle,
-          minHeight: "100px",
-          resize: "vertical",
-          marginBottom: "16px",
-        }}
+        onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+        style={{ ...inputStyle, minHeight: "100px", resize: "vertical", marginBottom: "16px" }}
       />
 
       <div style={{ display: "flex", gap: "10px" }}>
-        <button
-          onClick={() => onSave(form)}
-          style={{
-            padding: "11px 18px",
-            borderRadius: "10px",
-            border: "none",
-            background: "linear-gradient(135deg,#e8b86d,#c9973a)",
-            color: "#111",
-            fontWeight: "700",
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={() => onSave(form)} className="banquet-form__save-btn">
           Save Banquet
         </button>
-
         <button
           onClick={onCancel}
           style={{
@@ -1360,32 +955,15 @@ export default function Rooms({ theme = "dark" }) {
     () => {
       if (!loading) {
         const tl = gsap.timeline();
-        tl.from(".rooms-header", {
-          y: 30,
-          opacity: 0,
-          duration: 0.8,
-          ease: "expo.out",
-        })
+        tl.from(".rooms-header", { y: 30, opacity: 0, duration: 0.8, ease: "expo.out" })
           .from(
             ".rooms-stat",
-            {
-              y: 20,
-              opacity: 0,
-              duration: 0.7,
-              stagger: 0.1,
-              ease: "expo.out",
-            },
+            { y: 20, opacity: 0, duration: 0.7, stagger: 0.1, ease: "expo.out" },
             "-=0.5",
           )
           .from(
             ".room-card",
-            {
-              opacity: 0,
-              y: 15,
-              duration: 0.7,
-              stagger: 0.1,
-              ease: "expo.out",
-            },
+            { opacity: 0, y: 15, duration: 0.7, stagger: 0.1, ease: "expo.out" },
             "-=0.4",
           );
       }
@@ -1412,10 +990,7 @@ export default function Rooms({ theme = "dark" }) {
 
   useEffect(() => {
     fetch(`${backendUrl}/rooms/all`, {
-      // ✅ options go INSIDE fetch
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch rooms");
@@ -1423,7 +998,6 @@ export default function Rooms({ theme = "dark" }) {
       })
       .then((data) => {
         console.log("🔥 Backend data:", data);
-
         const mappedRooms = (data.rooms || []).map((r) => ({
           id: r._id,
           type: r.name,
@@ -1438,7 +1012,6 @@ export default function Rooms({ theme = "dark" }) {
           emoji: "🛏️",
           roomNumbers: r.roomNumbers || [],
         }));
-
         setRooms(mappedRooms);
         setBanquets(data.banquetHalls || []);
         setLoading(false);
@@ -1459,48 +1032,27 @@ export default function Rooms({ theme = "dark" }) {
   // Database banquet save function
   async function saveBanquet(form) {
     let imageUrls = [];
-
     for (const img of form.images || []) {
-      if (typeof img === "string") {
-        imageUrls.push(img);
-        continue;
-      }
-
+      if (typeof img === "string") { imageUrls.push(img); continue; }
       if (img.file) {
         const formData = new FormData();
-
         formData.append("image", img.file);
         formData.append("hotelId", localStorage.getItem("hotelId"));
-
         const uploadRes = await fetch(`${backendUrl}/rooms/upload-room-image`, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           body: formData,
         });
-
         if (!uploadRes.ok) continue;
-
         const uploadData = await uploadRes.json();
-
         imageUrls.push(uploadData.url);
       }
     }
-
     const updatedBanquets = banquets.map((b) =>
       b._id === editingBanquet._id
-        ? {
-            ...b,
-            name: form.name,
-            description: form.description,
-            capacity: form.capacity,
-            pricePerDay: form.pricePerDay,
-            images: imageUrls,
-          }
+        ? { ...b, name: form.name, description: form.description, capacity: form.capacity, pricePerDay: form.pricePerDay, images: imageUrls }
         : b,
     );
-
     try {
       const res = await fetch(`${backendUrl}/rooms/banquet-halls/update`, {
         method: "PUT",
@@ -1508,13 +1060,9 @@ export default function Rooms({ theme = "dark" }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({
-          banquetHalls: updatedBanquets,
-        }),
+        body: JSON.stringify({ banquetHalls: updatedBanquets }),
       });
-
       if (!res.ok) return;
-
       setBanquets(updatedBanquets);
       setEditingBanquet(null);
       setShowBanquetForm(false);
@@ -1526,34 +1074,19 @@ export default function Rooms({ theme = "dark" }) {
   // ===== DATABASE SAVE FUNCTION =====
   async function saveRoom(form) {
     let imageUrls = [];
-
-    // upload all images
     for (const img of form.images || []) {
-      // already uploaded image
-      if (typeof img === "string") {
-        imageUrls.push(img);
-        continue;
-      }
-
-      // newly selected image
+      if (typeof img === "string") { imageUrls.push(img); continue; }
       if (img.file) {
         const formData = new FormData();
-
         formData.append("image", img.file);
         formData.append("hotelId", localStorage.getItem("hotelId"));
-
         const uploadRes = await fetch(`${backendUrl}/rooms/upload-room-image`, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           body: formData,
         });
-
         if (!uploadRes.ok) continue;
-
         const uploadData = await uploadRes.json();
-
         imageUrls.push(uploadData.url);
       }
     }
@@ -1564,37 +1097,26 @@ export default function Rooms({ theme = "dark" }) {
 
     const updatedData = {
       name: form.type || "Unnamed Room",
-
-      // preserve null only if truly absent
       price:
         form.price !== "" && form.price !== null
           ? Number(form.price)
           : editingRoom?.price || null,
-
       plans: form.plans?.length > 0 ? form.plans : editingRoom?.plans || [],
-
       totalRooms: total,
       availableRooms: available,
-
       maximumGuests:
         form.maximumGuests !== ""
           ? Number(form.maximumGuests)
           : editingRoom?.maximumGuests || 2,
-
       description: form.description || "",
-
       amenities: form.amenities || [],
-
       images: imageUrls,
-
       roomNumbers,
     };
 
     try {
-      let response;
-
       if (editingId) {
-        response = await fetch(`${backendUrl}/rooms/${editingId}`, {
+        await fetch(`${backendUrl}/rooms/${editingId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -1603,7 +1125,7 @@ export default function Rooms({ theme = "dark" }) {
           body: JSON.stringify(updatedData),
         });
       } else {
-        response = await fetch(`${backendUrl}/rooms/add`, {
+        await fetch(`${backendUrl}/rooms/add`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1617,9 +1139,7 @@ export default function Rooms({ theme = "dark" }) {
       const res = await fetch(`${backendUrl}/rooms/all`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-
       const data = await res.json();
-
       setRooms(
         data.rooms.map((r) => ({
           id: r._id,
@@ -1636,7 +1156,6 @@ export default function Rooms({ theme = "dark" }) {
           roomNumbers: r.roomNumbers || [],
         })),
       );
-
       setEditingId(null);
       setShowAdd(false);
     } catch (err) {
@@ -1644,28 +1163,19 @@ export default function Rooms({ theme = "dark" }) {
     }
   }
 
-  // ===== TOGGLE BOOKING STATUS (Updates Database) =====
+  // ===== TOGGLE BOOKING STATUS =====
   async function toggleRoomBooked(roomId, roomIndex) {
-    // 1. Find the target room in local state
     const roomToUpdate = rooms.find((r) => r.id === roomId);
     if (!roomToUpdate) return;
-
-    // 2. Generate the new updated array of room numbers
     const newNums = roomToUpdate.roomNumbers.map((rn, i) =>
       i === roomIndex ? { ...rn, booked: !rn.booked } : rn,
     );
     const newAvailable = deriveAvailable(newNums);
-
-    // 3. Update the local UI immediately (Optimistic UI)
     setRooms((prev) =>
       prev.map((r) =>
-        r.id === roomId
-          ? { ...r, roomNumbers: newNums, available: newAvailable }
-          : r,
+        r.id === roomId ? { ...r, roomNumbers: newNums, available: newAvailable } : r,
       ),
     );
-
-    // 4. Create the payload matching your backend Schema
     const payload = {
       name: roomToUpdate.type,
       price: roomToUpdate.price,
@@ -1678,8 +1188,6 @@ export default function Rooms({ theme = "dark" }) {
       images: roomToUpdate.images,
       roomNumbers: newNums,
     };
-
-    // 5. Send the update to the Database
     try {
       const response = await fetch(`${backendUrl}/rooms/${roomId}`, {
         method: "PUT",
@@ -1689,9 +1197,7 @@ export default function Rooms({ theme = "dark" }) {
         },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) {
-        console.error("Failed to sync room booking status to database");
-      }
+      if (!response.ok) console.error("Failed to sync room booking status to database");
     } catch (err) {
       console.error("Error communicating with server:", err);
     }
@@ -1704,7 +1210,6 @@ export default function Rooms({ theme = "dark" }) {
         method: "DELETE",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-
       if (response.ok) {
         setRooms((prev) => prev.filter((r) => r.id !== deleteTarget));
         if (editingId === deleteTarget) setEditingId(null);
@@ -1752,14 +1257,7 @@ export default function Rooms({ theme = "dark" }) {
 
         <div
           className="rooms-header"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: isMobile ? "flex-start" : "center",
-            marginBottom: "20px",
-            gap: "12px",
-            flexWrap: "wrap",
-          }}
+          style={{ alignItems: isMobile ? "flex-start" : "center" }}
         >
           <div>
             <h1
@@ -1795,23 +1293,6 @@ export default function Rooms({ theme = "dark" }) {
               setShowAdd(!showAdd);
               setEditingId(null);
             }}
-            style={{
-              padding: "10px 18px",
-              borderRadius: "12px",
-              background: "linear-gradient(135deg, #e8b86d, #c9973a)",
-              border: "none",
-              color: "#1a0f00",
-              fontSize: "13px",
-              fontWeight: "700",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "7px",
-              boxShadow: "0 4px 16px rgba(232,184,109,0.25)",
-              fontFamily: "inherit",
-              flexShrink: 0,
-              transition: "all 0.22s",
-            }}
           >
             ➕ {!isMobile && "Add Room Type"}
           </button>
@@ -1826,72 +1307,51 @@ export default function Rooms({ theme = "dark" }) {
           }}
         >
           {[
-            {
-              label: "Total Rooms",
-              value: totalRooms,
-              color: isDark ? "#e8b86d" : "#2568b9",
-              bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
-              border: isDark
-                ? "rgba(232,184,109,0.15)"
-                : "rgba(37,104,185,0.15)",
-            },
-            {
-              label: "Available",
-              value: totalAvail,
-              color: isDark ? "#e8b86d" : "#2568b9",
-              bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
-              border: isDark
-                ? "rgba(232,184,109,0.15)"
-                : "rgba(37,104,185,0.15)",
-            },
-            {
-              label: "Occupancy",
-              value: `${overallOcc}%`,
-              color: isDark ? "#e8b86d" : "#2568b9",
-              bg: isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)",
-              border: isDark
-                ? "rgba(232,184,109,0.15)"
-                : "rgba(37,104,185,0.15)",
-            },
-          ].map((s, i) => (
-            <div
-              className="rooms-stat"
-              key={i}
-              style={{
-                background: isDark
-                  ? `linear-gradient(145deg, ${s.bg}, rgba(0,0,0,0.1))`
-                  : "#fff",
-                border: `1px solid ${isDark ? s.border : "rgba(0,0,0,0.09)"}`,
-                borderRadius: "14px",
-                padding: isMobile ? "12px" : "14px 18px",
-                boxShadow: isDark ? "none" : "0 2px 10px rgba(0,0,0,0.06)",
-                textAlign: "center",
-              }}
-            >
+            { label: "Total Rooms", value: totalRooms },
+            { label: "Available", value: totalAvail },
+            { label: "Occupancy", value: `${overallOcc}%` },
+          ].map((s, i) => {
+            const color = isDark ? "#e8b86d" : "#2568b9";
+            const bg = isDark ? "rgba(232,184,109,0.08)" : "rgba(37,104,185,0.08)";
+            const borderColor = isDark ? "rgba(232,184,109,0.15)" : "rgba(37,104,185,0.15)";
+            return (
               <div
+                className="rooms-stat"
+                key={i}
                 style={{
-                  fontSize: "13px",
-                  color: subtext,
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  marginBottom: "6px",
+                  background: isDark
+                    ? `linear-gradient(145deg, ${bg}, rgba(0,0,0,0.1))`
+                    : "#fff",
+                  border: `1px solid ${isDark ? borderColor : "rgba(0,0,0,0.09)"}`,
+                  padding: isMobile ? "12px" : "14px 18px",
+                  boxShadow: isDark ? "none" : "0 2px 10px rgba(0,0,0,0.06)",
                 }}
               >
-                {s.label}
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: subtext,
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: "6px",
+                  }}
+                >
+                  {s.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: isMobile ? "24px" : "28px",
+                    fontWeight: "800",
+                    color,
+                    letterSpacing: "-0.5px",
+                  }}
+                >
+                  {s.value}
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: isMobile ? "24px" : "28px",
-                  fontWeight: "800",
-                  color: s.color,
-                  letterSpacing: "-0.5px",
-                }}
-              >
-                {s.value}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {showAdd && !editingId && (
@@ -1899,15 +1359,8 @@ export default function Rooms({ theme = "dark" }) {
             key="add-form"
             title="➕ Add New Room Type"
             initial={{
-              type: "",
-              price: "",
-              plans: [],
-              maximumGuests: 2,
-              description: "",
-              amenities: [],
-              images: [],
-              emoji: "🛏️",
-              roomNumbers: [],
+              type: "", price: "", plans: [], maximumGuests: 2,
+              description: "", amenities: [], images: [], emoji: "🛏️", roomNumbers: [],
             }}
             onSave={saveRoom}
             onCancel={() => setShowAdd(false)}
@@ -1938,9 +1391,7 @@ export default function Rooms({ theme = "dark" }) {
           />
         )}
 
-        <div
-          style={{ display: "grid", gridTemplateColumns: cols, gap: "16px" }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: cols, gap: "16px" }}>
           {rooms.map((room) => {
             const availPercent =
               room.total > 0 ? (room.available / room.total) * 100 : 0;
@@ -1965,8 +1416,6 @@ export default function Rooms({ theme = "dark" }) {
                 style={{
                   background: cardBg,
                   border: `1px solid ${isFull ? "rgba(239,68,68,0.3)" : isLow ? "rgba(245,158,11,0.3)" : editingId === room.id ? "rgba(232,184,109,0.45)" : cardBorder}`,
-                  borderRadius: "18px",
-                  overflow: "hidden",
                   boxShadow: isDark
                     ? "0 4px 20px rgba(0,0,0,0.2)"
                     : "0 2px 16px rgba(0,0,0,0.07)",
@@ -1976,9 +1425,7 @@ export default function Rooms({ theme = "dark" }) {
                   style={{
                     height: isMobile ? "130px" : "150px",
                     position: "relative",
-                    background: isDark
-                      ? "rgba(255,255,255,0.05)"
-                      : "rgba(0,0,0,0.05)",
+                    background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
                     overflow: "hidden",
                   }}
                 >
@@ -1988,20 +1435,14 @@ export default function Rooms({ theme = "dark" }) {
                       style={{
                         position: "absolute",
                         inset: 0,
-                        background:
-                          "linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)",
+                        background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)",
                         pointerEvents: "none",
+                        zIndex: 1,
                       }}
                     />
                   )}
                   {room.images?.length > 0 && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: "10px",
-                        left: "12px",
-                      }}
-                    >
+                    <div style={{ position: "absolute", bottom: "10px", left: "12px" }}>
                       <div
                         style={{
                           fontSize: "14px",
@@ -2032,11 +1473,7 @@ export default function Rooms({ theme = "dark" }) {
                       backdropFilter: "blur(4px)",
                     }}
                   >
-                    {isFull
-                      ? "🔴 Full"
-                      : isLow
-                        ? `⚠️ ${room.available} left`
-                        : `✅ ${room.available} left`}
+                    {isFull ? "🔴 Full" : isLow ? `⚠️ ${room.available} left` : `✅ ${room.available} left`}
                   </div>
                   <button
                     onClick={() => handleEditClick(room)}
@@ -2047,10 +1484,7 @@ export default function Rooms({ theme = "dark" }) {
                       padding: "4px 10px",
                       borderRadius: "8px",
                       fontSize: "11px",
-                      background:
-                        editingId === room.id
-                          ? "rgba(232,184,109,0.9)"
-                          : "rgba(0,0,0,0.6)",
+                      background: editingId === room.id ? "rgba(232,184,109,0.9)" : "rgba(0,0,0,0.6)",
                       border: "1px solid rgba(255,255,255,0.2)",
                       color: editingId === room.id ? "#1a0f00" : "#fff",
                       cursor: "pointer",
@@ -2081,14 +1515,7 @@ export default function Rooms({ theme = "dark" }) {
                     </h3>
                   )}
                   {room.description && (
-                    <p
-                      style={{
-                        fontSize: "12px",
-                        color: subtext,
-                        marginBottom: "10px",
-                        lineHeight: "1.5",
-                      }}
-                    >
+                    <p style={{ fontSize: "12px", color: subtext, marginBottom: "10px", lineHeight: "1.5" }}>
                       {room.description}
                     </p>
                   )}
@@ -2101,9 +1528,7 @@ export default function Rooms({ theme = "dark" }) {
                       padding: "11px 13px",
                       borderRadius: "12px",
                       marginBottom: "12px",
-                      background: isDark
-                        ? "rgba(232,184,109,0.06)"
-                        : "rgba(232,184,109,0.08)",
+                      background: isDark ? "rgba(232,184,109,0.06)" : "rgba(232,184,109,0.08)",
                       border: "1px solid rgba(232,184,109,0.15)",
                     }}
                   >
@@ -2119,14 +1544,7 @@ export default function Rooms({ theme = "dark" }) {
                       >
                         Price / night
                       </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "4px",
-                          alignItems: "flex-start",
-                        }}
-                      >
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" }}>
                         {room.price ? (
                           <div
                             style={{
@@ -2140,14 +1558,7 @@ export default function Rooms({ theme = "dark" }) {
                           </div>
                         ) : room.plans?.length > 0 ? (
                           room.plans.map((plan, idx) => (
-                            <div
-                              key={idx}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                              }}
-                            >
+                            <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               <span
                                 style={{
                                   fontSize: "10px",
@@ -2161,7 +1572,6 @@ export default function Rooms({ theme = "dark" }) {
                               >
                                 {plan.name}
                               </span>
-
                               <span
                                 style={{
                                   fontSize: isMobile ? "15px" : "16px",
@@ -2174,14 +1584,7 @@ export default function Rooms({ theme = "dark" }) {
                             </div>
                           ))
                         ) : (
-                          <div
-                            style={{
-                              fontSize: "14px",
-                              color: subtext,
-                            }}
-                          >
-                            No pricing
-                          </div>
+                          <div style={{ fontSize: "14px", color: subtext }}>No pricing</div>
                         )}
                       </div>
                     </div>
@@ -2201,12 +1604,7 @@ export default function Rooms({ theme = "dark" }) {
                         style={{
                           fontSize: isMobile ? "17px" : "19px",
                           fontWeight: "800",
-                          color:
-                            occPercent >= 75
-                              ? "#ef4444"
-                              : occPercent >= 50
-                                ? "#f59e0b"
-                                : "#22c55e",
+                          color: occPercent >= 75 ? "#ef4444" : occPercent >= 50 ? "#f59e0b" : "#22c55e",
                           letterSpacing: "-0.5px",
                         }}
                       >
@@ -2245,31 +1643,17 @@ export default function Rooms({ theme = "dark" }) {
                         marginBottom: "6px",
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          color: subtext,
-                          fontWeight: "600",
-                        }}
-                      >
+                      <span style={{ fontSize: "11px", color: subtext, fontWeight: "600" }}>
                         Availability
                       </span>
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: "700",
-                          color: text,
-                        }}
-                      >
+                      <span style={{ fontSize: "12px", fontWeight: "700", color: text }}>
                         {room.available}/{room.total}
                       </span>
                     </div>
                     <div
                       style={{
                         height: "8px",
-                        background: isDark
-                          ? "rgba(255,255,255,0.08)"
-                          : "rgba(0,0,0,0.08)",
+                        background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
                         borderRadius: "100px",
                         overflow: "hidden",
                       }}
@@ -2308,13 +1692,7 @@ export default function Rooms({ theme = "dark" }) {
                       >
                         Amenities
                       </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: "5px",
-                        }}
-                      >
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                         {room.amenities.map((a) => (
                           <span
                             key={a}
@@ -2328,9 +1706,7 @@ export default function Rooms({ theme = "dark" }) {
                                 ? "1px solid rgba(167,139,250,0.25)"
                                 : `1px solid ${cardBorder}`,
                               fontSize: "11px",
-                              color: !ALL_AMENITIES.includes(a)
-                                ? "#a78bfa"
-                                : subtext,
+                              color: !ALL_AMENITIES.includes(a) ? "#a78bfa" : subtext,
                               fontWeight: "500",
                             }}
                           >
@@ -2354,7 +1730,6 @@ export default function Rooms({ theme = "dark" }) {
         </div>
       </div>
 
-      
       {/* ── Banquet Section ───────────────────── */}
       <div style={{ marginTop: "40px" }}>
         <div
@@ -2376,13 +1751,7 @@ export default function Rooms({ theme = "dark" }) {
             >
               Banquet Halls
             </h2>
-
-            <p
-              style={{
-                fontSize: "13px",
-                color: subtext,
-              }}
-            >
+            <p style={{ fontSize: "13px", color: subtext }}>
               Upload banquet hall photos and manage banquet media
             </p>
           </div>
@@ -2401,13 +1770,7 @@ export default function Rooms({ theme = "dark" }) {
           />
         )}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: cols,
-            gap: "16px",
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: cols, gap: "16px" }}>
           {banquets.map((hall, idx) => (
             <div
               key={idx}
@@ -2424,17 +1787,12 @@ export default function Rooms({ theme = "dark" }) {
               <div
                 style={{
                   height: "220px",
-                  background: isDark
-                    ? "rgba(255,255,255,0.05)"
-                    : "rgba(0,0,0,0.05)",
+                  background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
                   position: "relative",
                 }}
               >
                 <ImageSlider
-                  room={{
-                    type: hall.name,
-                    images: hall.images || [],
-                  }}
+                  room={{ type: hall.name, images: hall.images || [] }}
                   subtext={subtext}
                 />
               </div>
@@ -2450,7 +1808,6 @@ export default function Rooms({ theme = "dark" }) {
                 >
                   {hall.name}
                 </div>
-
                 <div
                   style={{
                     fontSize: "13px",
@@ -2483,7 +1840,6 @@ export default function Rooms({ theme = "dark" }) {
                   >
                     👥 {hall.capacity || 0} Guests
                   </div>
-
                   {hall.pricePerDay && (
                     <div
                       style={{
@@ -2503,26 +1859,11 @@ export default function Rooms({ theme = "dark" }) {
 
                 <button
                   onClick={() => {
-                    // later you can open edit modal
                     setEditingBanquet(hall);
                     setShowBanquetForm(true);
-
-                    window.scrollTo({
-                      top: document.body.scrollHeight,
-                      behavior: "smooth",
-                    });
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
                   }}
-                  style={{
-                    width: "100%",
-                    padding: "11px",
-                    borderRadius: "12px",
-                    border: "1px solid rgba(232,184,109,0.2)",
-                    background: "rgba(232,184,109,0.08)",
-                    color: "#e8b86d",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
+                  className="banquet-edit-btn"
                 >
                   ✏️ Edit Banquet
                 </button>

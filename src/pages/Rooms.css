@@ -350,3 +350,707 @@
 }
 .amenity-btn.unselected.dark { border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); }
 .amenity-btn.unselected.light { border: 1px solid rgba(0,0,0,0.12); background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.5); }
+
+/* ── Keyframe Animations ─────────────────────────────────────────── */
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Root container ──────────────────────────────────────────────── */
+.rooms-root {
+  padding: 24px;
+  min-height: 100vh;
+}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.rooms-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── Stat cards ──────────────────────────────────────────────────── */
+.rooms-stat {
+  border-radius: 14px;
+  text-align: center;
+}
+
+/* ── Room cards ──────────────────────────────────────────────────── */
+.room-card {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* ── Add Room button ─────────────────────────────────────────────── */
+.add-room-btn {
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e8b86d, #c9973a);
+  border: none;
+  color: #1a0f00;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 4px 16px rgba(232, 184, 109, 0.25);
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: all 0.22s;
+}
+
+.add-room-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(232, 184, 109, 0.35);
+}
+
+/* ── Delete Room button ──────────────────────────────────────────── */
+.delete-room-btn {
+  width: 100%;
+  padding: 10px;
+  borderRadius: 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.delete-room-btn.dark {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.delete-room-btn.light {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+}
+
+.delete-room-btn:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* ── Amenity buttons ─────────────────────────────────────────────── */
+.amenity-btn {
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.amenity-btn.selected {
+  background: rgba(232, 184, 109, 0.15);
+  border: 1px solid rgba(232, 184, 109, 0.5);
+  color: #e8b86d;
+}
+
+.amenity-btn.unselected.dark {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.amenity-btn.unselected.light {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.amenity-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Image Slider ────────────────────────────────────────────────── */
+.slider-no-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-no-image__icon {
+  font-size: 28px;
+}
+
+.slider-no-image__label {
+  font-size: 12px;
+}
+
+.slider-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.slider-fullscreen-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 10000;
+}
+
+.slider-fullscreen-media {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.slider-expand-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.slider-prev-btn,
+.slider-next-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  z-index: 5;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider-prev-btn {
+  left: 8px;
+}
+
+.slider-next-btn {
+  right: 8px;
+}
+
+.slider-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 5;
+}
+
+.slider-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.slider-dot--active {
+  background: #fff;
+}
+
+.slider-dot--inactive {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Confirm Dialog ──────────────────────────────────────────────── */
+.confirm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirm-dialog-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.confirm-dialog-box {
+  position: relative;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 18px;
+  padding: 28px 24px;
+  max-width: 380px;
+  width: 100%;
+  animation: modalIn 0.22s ease forwards;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.confirm-dialog-box.dark {
+  background: #0f0f1e;
+}
+
+.confirm-dialog-box.light {
+  background: #fff;
+}
+
+.confirm-dialog-icon {
+  font-size: 32px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.confirm-dialog-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.confirm-dialog-title.dark {
+  color: #fff;
+}
+
+.confirm-dialog-title.light {
+  color: #0f172a;
+}
+
+.confirm-dialog-message {
+  font-size: 11px;
+  text-align: center;
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+.confirm-dialog-message.dark {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.confirm-dialog-message.light {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-dialog-cancel {
+  flex: 1;
+  padding: 11px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.confirm-dialog-cancel.dark {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.confirm-dialog-cancel.light {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.confirm-dialog-confirm {
+  flex: 1;
+  padding: 11px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ── Room Grid ───────────────────────────────────────────────────── */
+.room-grid-empty {
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.room-grid-empty.dark {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.room-grid-empty.light {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.room-grid-empty__title {
+  font-size: 13px;
+}
+
+.room-grid-empty__subtitle {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 3px;
+}
+
+.room-grid-header {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.room-grid-header__hint {
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.6;
+}
+
+.room-grid-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.room-grid-cell {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.room-grid-cell--available {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1.5px solid rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+  box-shadow: 0 1px 4px rgba(34, 197, 94, 0.12);
+}
+
+.room-grid-cell--booked {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.15);
+}
+
+.room-grid-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.room-grid-legend__item {
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.room-grid-legend__item--available {
+  color: #22c55e;
+}
+
+.room-grid-legend__item--booked {
+  color: #ef4444;
+}
+
+.room-grid-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.room-grid-legend__dot--available {
+  background: rgba(34, 197, 94, 0.4);
+}
+
+.room-grid-legend__dot--booked {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+/* ── Image Uploader ──────────────────────────────────────────────── */
+.image-uploader-zone {
+  width: 100%;
+  min-height: 140px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  background: rgba(232, 184, 109, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.image-uploader-zone--idle {
+  border: 2px dashed rgba(232, 184, 109, 0.3);
+}
+
+.image-uploader-zone--hovered {
+  border: 2px dashed rgba(232, 184, 109, 0.6);
+}
+
+.image-uploader-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.image-uploader-thumb {
+  position: relative;
+  height: 90px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.image-uploader-thumb__media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-uploader-thumb__remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-uploader-placeholder {
+  text-align: center;
+}
+
+.image-uploader-placeholder__icon {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.image-uploader-placeholder__label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* ── Room Form ───────────────────────────────────────────────────── */
+.room-form {
+  border-radius: 18px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.25s ease forwards;
+}
+
+.room-form.dark {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(232, 184, 109, 0.3);
+}
+
+.room-form.light {
+  background: #fff;
+  border: 1px solid rgba(232, 184, 109, 0.4);
+}
+
+.room-form__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.room-form__title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.room-form__close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.room-form__save-btn {
+  padding: 11px 24px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #e8b86d, #c9973a);
+  border: none;
+  color: #1a0f00;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 16px rgba(232, 184, 109, 0.25);
+}
+
+/* ── Banquet Form ────────────────────────────────────────────────── */
+.banquet-form {
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.banquet-form.dark {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.banquet-form__title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.banquet-form__save-btn {
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #e8b86d, #c9973a);
+  color: #111;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── Banquet card edit button ────────────────────────────────────── */
+.banquet-edit-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(232, 184, 109, 0.2);
+  background: rgba(232, 184, 109, 0.08);
+  color: #e8b86d;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ── Custom amenity input ────────────────────────────────────────── */
+.custom-amenity-input {
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  background: rgba(167, 139, 250, 0.1);
+  outline: none;
+  font-family: inherit;
+  width: 130px;
+}
+
+.custom-amenity-add-btn {
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  background: rgba(167, 139, 250, 0.2);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  color: #a78bfa;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.custom-amenity-other-btn {
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px dashed rgba(167, 139, 250, 0.4);
+  background: rgba(167, 139, 250, 0.06);
+  color: #a78bfa;
+  transition: all 0.15s;
+}
+
+.custom-amenity-tag {
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  background: rgba(167, 139, 250, 0.15);
+  color: #a78bfa;
+  transition: all 0.15s;
+}
