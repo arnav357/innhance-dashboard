@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React,{ useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -196,19 +196,35 @@ function Avatar({ idx, letter, size = 28, radius = 8 }) {
 
 export default function Chats({ theme = "dark" }) {
   const container = useRef();
-  
+
   // ── Backend States ─────────────────────────────────────────────
   const [allCustomers, setAllCustomers] = useState([]);
   const [selected, setSelected] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  useGSAP(() => {
-    if (isLoading) return;
-    const tl = gsap.timeline();
-    tl.from('.chat-header', { y: 30, opacity: 0, duration: 0.8, ease: 'expo.out' })
-      .from('.sidebar-panel', { x: -20, opacity: 0, duration: 0.7, ease: 'expo.out' }, "-=0.5")
-      .from('.chat-panel', { opacity: 0, duration: 0.7, ease: 'expo.out' }, "-=0.5");
-  }, { scope: container, dependencies: [isLoading] });
+
+  useGSAP(
+    () => {
+      if (isLoading) return;
+      const tl = gsap.timeline();
+      tl.from(".chat-header", {
+        y: 30,
+        opacity: 0,
+        duration: 0.8,
+        ease: "expo.out",
+      })
+        .from(
+          ".sidebar-panel",
+          { x: -20, opacity: 0, duration: 0.7, ease: "expo.out" },
+          "-=0.5",
+        )
+        .from(
+          ".chat-panel",
+          { opacity: 0, duration: 0.7, ease: "expo.out" },
+          "-=0.5",
+        );
+    },
+    { scope: container, dependencies: [isLoading] },
+  );
   const [error, setError] = useState(null);
 
   const [search, setSearch] = useState("");
@@ -473,9 +489,34 @@ export default function Chats({ theme = "dark" }) {
     return i === msgs.length - 1 || msgs[i + 1].role !== msgs[i].role;
   }
 
+  function formatChatDate(dateString) {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+
+    const today = new Date();
+    const yesterday = new Date();
+
+    yesterday.setDate(today.getDate() - 1);
+
+    const isSameDay = (a, b) =>
+      a.getDate() === b.getDate() &&
+      a.getMonth() === b.getMonth() &&
+      a.getFullYear() === b.getFullYear();
+
+    if (isSameDay(date, today)) return "Today";
+
+    if (isSameDay(date, yesterday)) return "Yesterday";
+
+    return date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
   return (
     <div>
-
       <div className="chats-root" ref={container}>
         {/* ── Page header ── */}
         <div
@@ -556,7 +597,14 @@ export default function Chats({ theme = "dark" }) {
         </div>
 
         {/* ── Main layout ── */}
-        <div className={`chats-container ${isDark ? 'dark' : 'light'}`} style={{ animation: 'none', background: cardBg, border: `1px solid ${cardBorder}` }}>
+        <div
+          className={`chats-container ${isDark ? "dark" : "light"}`}
+          style={{
+            animation: "none",
+            background: cardBg,
+            border: `1px solid ${cardBorder}`,
+          }}
+        >
           {isLoading ? (
             <div
               style={{
@@ -572,7 +620,9 @@ export default function Chats({ theme = "dark" }) {
           ) : (
             <>
               {/* ── LEFT: Sidebar ── */}
-              <div className={`sidebar-panel ${mobileView === 'chat' ? 'view-chat' : 'view-list'}`}>
+              <div
+                className={`sidebar-panel ${mobileView === "chat" ? "view-chat" : "view-list"}`}
+              >
                 <div
                   style={{
                     width: "100%",
@@ -677,10 +727,10 @@ export default function Chats({ theme = "dark" }) {
                         return (
                           <div
                             key={c.id}
-                            className={`conv-item ${isActive ? 'active' : ''}`}
+                            className={`conv-item ${isActive ? "active" : ""}`}
                             onClick={() => handleSelectCustomer(c)}
                             style={{
-                              '--hover-bg': hoverBg,
+                              "--hover-bg": hoverBg,
                               padding: "13px 14px",
                               background: isActive ? activeBg : "transparent",
                               borderLeft: isActive
@@ -830,7 +880,9 @@ export default function Chats({ theme = "dark" }) {
 
               {/* ── RIGHT: Chat window ── */}
               {selected ? (
-                <div className={`chat-panel ${mobileView === 'list' ? 'view-list' : 'view-chat'}`}>
+                <div
+                  className={`chat-panel ${mobileView === "list" ? "view-list" : "view-chat"}`}
+                >
                   <div
                     style={{
                       flex: 1,
@@ -977,7 +1029,7 @@ export default function Chats({ theme = "dark" }) {
 
                     {/* Messages */}
                     <div
-                      className={`messages-area ${isDark ? 'dark' : 'light'}`}
+                      className={`messages-area ${isDark ? "dark" : "light"}`}
                       style={{
                         flex: 1,
                         overflowY: "auto",
@@ -989,55 +1041,26 @@ export default function Chats({ theme = "dark" }) {
                       }}
                     >
                       {/* Date separator */}
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          margin: "4px 0 14px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            flex: 1,
-                            height: "1px",
-                            background: isDark
-                              ? "rgba(255,255,255,0.07)"
-                              : "rgba(0,0,0,0.07)",
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            color: subtext,
-                            fontWeight: "600",
-                            padding: "3px 12px",
-                            borderRadius: "100px",
-                            background: isDark
-                              ? "rgba(255,255,255,0.05)"
-                              : "rgba(0,0,0,0.05)",
-                            border: `1px solid ${cardBorder}`,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          Today
-                        </span>
-                        <div
-                          style={{
-                            flex: 1,
-                            height: "1px",
-                            background: isDark
-                              ? "rgba(255,255,255,0.07)"
-                              : "rgba(0,0,0,0.07)",
-                          }}
-                        />
-                      </div>
 
                       {selected.messages.map((m, i) => {
+                        const prevMsg = selected.messages[i - 1];
+
+                        const currentDate = m.timestamp || m.date;
+                        const prevDate = prevMsg?.timestamp || prevMsg?.date;
+
+                        const showDateSeparator =
+                          i === 0 ||
+                          new Date(currentDate).toDateString() !==
+                            new Date(prevDate).toDateString();
+
                         const isUser = m.role === "user";
+
                         const showAv = shouldShowAvatar(selected.messages, i);
+
                         const showTime = shouldShowTime(selected.messages, i);
+
                         const first = isFirstInGroup(selected.messages, i);
+
                         const last = isLastInGroup(selected.messages, i);
 
                         // Bubble border radius — grouped corners
@@ -1055,124 +1078,176 @@ export default function Chats({ theme = "dark" }) {
                         }
 
                         return (
-                          <div
-                            key={i}
-                            style={{
-                              display: "flex",
-                              justifyContent: isUser
-                                ? "flex-end"
-                                : "flex-start",
-                              alignItems: "flex-end",
-                              gap: "7px",
-                              marginBottom: showTime ? "8px" : "2px",
-                            }}
-                          >
-                            {/* Bot avatar */}
-                            {!isUser && (
+                          <React.Fragment key={i}>
+                            {showDateSeparator && (
                               <div
                                 style={{
-                                  width: "28px",
-                                  flexShrink: 0,
                                   display: "flex",
-                                  alignItems: "flex-end",
+                                  alignItems: "center",
+                                  gap: "12px",
+                                  margin: "16px 0 14px",
                                 }}
                               >
-                                {showAv ? (
-                                  <div
-                                    className="bot-icon"
-                                    style={{
-                                      width: "28px",
-                                      height: "28px",
-                                      borderRadius: "8px",
-                                      background:
-                                        "linear-gradient(135deg, #e8b86d, #c9973a)",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontSize: "13px",
-                                      boxShadow:
-                                        "0 2px 8px rgba(232,184,109,0.3)",
-                                    }}
-                                  >
-                                    🤖
-                                  </div>
-                                ) : (
-                                  <div style={{ width: "28px" }} />
-                                )}
+                                <div
+                                  style={{
+                                    flex: 1,
+                                    height: "1px",
+                                    background: isDark
+                                      ? "rgba(255,255,255,0.07)"
+                                      : "rgba(0,0,0,0.07)",
+                                  }}
+                                />
+
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    color: subtext,
+                                    fontWeight: "600",
+                                    padding: "3px 12px",
+                                    borderRadius: "100px",
+                                    background: isDark
+                                      ? "rgba(255,255,255,0.05)"
+                                      : "rgba(0,0,0,0.05)",
+                                    border: `1px solid ${cardBorder}`,
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {formatChatDate(currentDate)}
+                                </span>
+
+                                <div
+                                  style={{
+                                    flex: 1,
+                                    height: "1px",
+                                    background: isDark
+                                      ? "rgba(255,255,255,0.07)"
+                                      : "rgba(0,0,0,0.07)",
+                                  }}
+                                />
                               </div>
                             )}
 
                             <div
+                              key={i}
                               style={{
-                                maxWidth: isMobile ? "82%" : "65%",
                                 display: "flex",
-                                flexDirection: "column",
-                                alignItems: isUser ? "flex-end" : "flex-start",
+                                justifyContent: isUser
+                                  ? "flex-end"
+                                  : "flex-start",
+                                alignItems: "flex-end",
+                                gap: "7px",
+                                marginBottom: showTime ? "8px" : "2px",
                               }}
                             >
-                              <div
-                                style={{
-                                  padding: "10px 14px",
-                                  borderRadius: radius,
-                                  background: isUser
-                                    ? `linear-gradient(135deg, ${isDark ? "#1a1a2e" : "#1e3a5f"}, #0f3460)`
-                                    : msgBg,
-                                  color: isUser ? "#fff" : text,
-                                  fontSize: "13px",
-                                  lineHeight: "1.6",
-                                  border: !isUser
-                                    ? `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)"}`
-                                    : "none",
-                                  whiteSpace: "pre-line",
-                                  boxShadow: isUser
-                                    ? "0 2px 10px rgba(15,52,96,0.3)"
-                                    : isDark
-                                      ? "none"
-                                      : "0 1px 3px rgba(0,0,0,0.06)",
-                                }}
-                              >
-                                {m.content}
-                              </div>
-
-                              {/* Timestamp — only at end of group */}
-                              {showTime && (
+                              {/* Bot avatar */}
+                              {!isUser && (
                                 <div
                                   style={{
-                                    fontSize: "10px",
-                                    color: subtext,
-                                    marginTop: "4px",
-                                    paddingLeft: !isUser ? "2px" : "0",
-                                    paddingRight: isUser ? "2px" : "0",
+                                    width: "28px",
+                                    flexShrink: 0,
+                                    display: "flex",
+                                    alignItems: "flex-end",
                                   }}
                                 >
-                                  {m.time}
+                                  {showAv ? (
+                                    <div
+                                      className="bot-icon"
+                                      style={{
+                                        width: "28px",
+                                        height: "28px",
+                                        borderRadius: "8px",
+                                        background:
+                                          "linear-gradient(135deg, #e8b86d, #c9973a)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "13px",
+                                        boxShadow:
+                                          "0 2px 8px rgba(232,184,109,0.3)",
+                                      }}
+                                    >
+                                      🤖
+                                    </div>
+                                  ) : (
+                                    <div style={{ width: "28px" }} />
+                                  )}
+                                </div>
+                              )}
+
+                              <div
+                                style={{
+                                  maxWidth: isMobile ? "82%" : "65%",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: isUser
+                                    ? "flex-end"
+                                    : "flex-start",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    padding: "10px 14px",
+                                    borderRadius: radius,
+                                    background: isUser
+                                      ? `linear-gradient(135deg, ${isDark ? "#1a1a2e" : "#1e3a5f"}, #0f3460)`
+                                      : msgBg,
+                                    color: isUser ? "#fff" : text,
+                                    fontSize: "13px",
+                                    lineHeight: "1.6",
+                                    border: !isUser
+                                      ? `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)"}`
+                                      : "none",
+                                    whiteSpace: "pre-line",
+                                    boxShadow: isUser
+                                      ? "0 2px 10px rgba(15,52,96,0.3)"
+                                      : isDark
+                                        ? "none"
+                                        : "0 1px 3px rgba(0,0,0,0.06)",
+                                  }}
+                                >
+                                  {m.content}
+                                </div>
+
+                                {/* Timestamp — only at end of group */}
+                                {showTime && (
+                                  <div
+                                    style={{
+                                      fontSize: "10px",
+                                      color: subtext,
+                                      marginTop: "4px",
+                                      paddingLeft: !isUser ? "2px" : "0",
+                                      paddingRight: isUser ? "2px" : "0",
+                                    }}
+                                  >
+                                    {m.time}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* User avatar */}
+                              {isUser && (
+                                <div
+                                  style={{
+                                    width: "28px",
+                                    flexShrink: 0,
+                                    display: "flex",
+                                    alignItems: "flex-end",
+                                  }}
+                                >
+                                  {showAv ? (
+                                    <Avatar
+                                      idx={selectedIdx}
+                                      letter={selected.avatar}
+                                      size={28}
+                                      radius={8}
+                                    />
+                                  ) : (
+                                    <div style={{ width: "28px" }} />
+                                  )}
                                 </div>
                               )}
                             </div>
-
-                            {/* User avatar */}
-                            {isUser && (
-                              <div
-                                style={{
-                                  width: "28px",
-                                  flexShrink: 0,
-                                  display: "flex",
-                                  alignItems: "flex-end",
-                                }}
-                              >
-                                {showAv ? (
-                                  <Avatar
-                                    idx={selectedIdx}
-                                    letter={selected.avatar}
-                                    size={28}
-                                    radius={8}
-                                  />
-                                ) : (
-                                  <div style={{ width: "28px" }} />
-                                )}
-                              </div>
-                            )}
-                          </div>
+                          </React.Fragment>
                         );
                       })}
 
